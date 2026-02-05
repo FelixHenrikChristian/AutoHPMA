@@ -135,11 +135,8 @@ namespace AutoHPMA.Views.Windows
             }
 
             // 启动时自动检查更新
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(2000); // 延迟2秒后检查更新
-                await _updateService.CheckUpdateAsync(new UpdateOption { Trigger = UpdateTrigger.Auto });
-            });
+            await Task.Delay(500);
+            await _updateService.CheckUpdateAsync(new UpdateOption { Trigger = UpdateTrigger.Auto });
         }
 
     }

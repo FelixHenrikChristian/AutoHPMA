@@ -52,10 +52,7 @@ namespace AutoHPMA.Services
 
                 if (latestVersion <= currentVersion)
                 {
-                    if (option.Trigger == UpdateTrigger.Manual)
-                    {
-                        SnackbarHelper.ShowSuccess("检查更新", "当前已是最新版本");
-                    }
+                    SnackbarHelper.ShowSuccess("检查更新", "当前已是最新版本");
                     return;
                 }
 
