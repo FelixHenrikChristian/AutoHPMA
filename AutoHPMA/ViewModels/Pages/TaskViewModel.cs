@@ -1,6 +1,7 @@
 ﻿using AutoHPMA.GameTask;
 using AutoHPMA.GameTask.Permanent;
 using AutoHPMA.GameTask.Temporary;
+using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Messages;
 using AutoHPMA.Services;
@@ -183,21 +184,7 @@ namespace AutoHPMA.ViewModels.Pages
             uiMessageBox.ShowDialogAsync();
         }
 
-        /// <summary>
-        /// 显示成功 Snackbar
-        /// </summary>
-        private void ShowSuccessSnackbar(string taskName)
-        {
-            var snackbarInfo = new SnackbarInfo
-            {
-                Title = "启动成功",
-                Message = $"{taskName}已启动。",
-                Appearance = ControlAppearance.Success,
-                Icon = new SymbolIcon(SymbolRegular.CheckmarkCircle24, 36),
-                Duration = TimeSpan.FromSeconds(3)
-            };
-            WeakReferenceMessenger.Default.Send(new ShowSnackbarMessage(snackbarInfo));
-        }
+
 
         /// <summary>
         /// 订阅任务完成事件
@@ -231,7 +218,7 @@ namespace AutoHPMA.ViewModels.Pages
                 return false;
             }
 
-            ShowSuccessSnackbar(taskName);
+            SnackbarHelper.ShowSuccess("启动成功", $"{taskName}已启动。");
             CurrentTaskType = taskType;
 
             _currentTask = createTask();

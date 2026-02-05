@@ -180,7 +180,7 @@ namespace AutoHPMA.ViewModels.Pages
                 return;
             }
 
-            ShowSuccessSnackbar("截图器已启动，可启动其他任务。");
+            SnackbarHelper.ShowSuccess("启动成功", "截图器已启动，可启动其他任务。");
             IsRunning = true;
 
             // 当官方启动器时，将游戏窗口置于前端
@@ -275,18 +275,7 @@ namespace AutoHPMA.ViewModels.Pages
             _ = uiMessageBox.ShowDialogAsync();
         }
 
-        private void ShowSuccessSnackbar(string message)
-        {
-            var snackbarInfo = new SnackbarInfo
-            {
-                Title = "启动成功",
-                Message = message,
-                Appearance = ControlAppearance.Success,
-                Icon = new SymbolIcon(SymbolRegular.CheckmarkCircle24, 36),
-                Duration = TimeSpan.FromSeconds(3),
-            };
-            WeakReferenceMessenger.Default.Send(new ShowSnackbarMessage(snackbarInfo));
-        }
+
 
         private void GetGameHwnd()
         {

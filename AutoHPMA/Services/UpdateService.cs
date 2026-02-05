@@ -1,3 +1,4 @@
+using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 using AutoHPMA.Services.Interface;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,6 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Windows;
-using Wpf.Ui;
 using Wpf.Ui.Controls;
 
 namespace AutoHPMA.Services
@@ -15,14 +15,12 @@ namespace AutoHPMA.Services
     public class UpdateService : IUpdateService
     {
         private readonly ILogger<UpdateService> _logger;
-        private readonly ISnackbarService _snackbarService;
         private const string GitHubApiUrl = "https://api.github.com/repos/FelixChristian011226/AutoHPMA/releases/latest";
         private const string DownloadPageUrl = "https://github.com/FelixChristian011226/AutoHPMA/releases/latest";
 
-        public UpdateService(ILogger<UpdateService> logger, ISnackbarService snackbarService)
+        public UpdateService(ILogger<UpdateService> logger)
         {
             _logger = logger;
-            _snackbarService = snackbarService;
         }
 
         public async Task CheckUpdateAsync(UpdateOption option)
@@ -56,13 +54,7 @@ namespace AutoHPMA.Services
                 {
                     if (option.Trigger == UpdateTrigger.Manual)
                     {
-                        _snackbarService.Show(
-                            title: "检查更新",
-                            message: "当前已是最新版本",
-                            ControlAppearance.Success,
-                            icon: new SymbolIcon(SymbolRegular.ArrowCircleUp24),
-                            timeout: TimeSpan.FromSeconds(3)
-                        );
+                        SnackbarHelper.ShowSuccess("检查更新", "当前已是最新版本");
                     }
                     return;
                 }
