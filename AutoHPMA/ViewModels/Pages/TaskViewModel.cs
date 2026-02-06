@@ -39,6 +39,7 @@ namespace AutoHPMA.ViewModels.Pages
         private readonly AppSettings _settings;
         private readonly ILogger<TaskViewModel> _logger;
         private readonly CookingConfigService _cookingConfigService;
+        private readonly IOcrService _ocrService;
 
         #region Observable Properties
 
@@ -72,11 +73,6 @@ namespace AutoHPMA.ViewModels.Pages
         [ObservableProperty]
         private string _autoCookingSelectedDish = "海鱼黄金焗饭";
 
-        [ObservableProperty]
-        private string _autoCookingSelectedOCR = "Tesseract";
-
-        public ObservableCollection<string> OCRs { get; } = new ObservableCollection<string> { "Tesseract", "PaddleOCR" };
-
         #endregion
 
 
@@ -95,11 +91,12 @@ namespace AutoHPMA.ViewModels.Pages
 
         #region 构造函数
 
-        public TaskViewModel(AppSettings settings, ILogger<TaskViewModel> logger, CookingConfigService cookingConfigService)
+        public TaskViewModel(AppSettings settings, ILogger<TaskViewModel> logger, CookingConfigService cookingConfigService, IOcrService ocrService)
         {
             _settings = settings;
             _logger = logger;
             _cookingConfigService = cookingConfigService;
+            _ocrService = ocrService;
 
             appContextService = AppContextService.Instance;
             appContextService.PropertyChanged += AppContextService_PropertyChanged;
@@ -124,7 +121,6 @@ namespace AutoHPMA.ViewModels.Pages
             SelectedTeamPosition = _settings.SelectedTeamPosition;
             AutoCookingTimes = _settings.AutoCookingTimes;
             AutoCookingSelectedDish = _settings.AutoCookingSelectedDish;
-            AutoCookingSelectedOCR = _settings.AutoCookingSelectedOCR;
         }
 
         private void LoadDishes()
@@ -274,7 +270,7 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoClubQuiz,
                     "自动社团答题",
-                    () => new AutoClubQuiz(App.GetLogger<AutoClubQuiz>(), _displayHwnd, _gameHwnd),
+                    () => new AutoClubQuiz(App.GetLogger<AutoClubQuiz>(), _ocrService, _displayHwnd, _gameHwnd),
                     new Dictionary<string, object>
                     {
                         { "AnswerDelay", AnswerDelay },
@@ -309,12 +305,11 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoCooking,
                     "自动烹饪",
-                    () => new AutoCooking(App.GetLogger<AutoCooking>(), _cookingConfigService, _displayHwnd, _gameHwnd),
+                    () => new AutoCooking(App.GetLogger<AutoCooking>(), _cookingConfigService, _ocrService, _displayHwnd, _gameHwnd),
                     new Dictionary<string, object>
                     {
                         { "Times", AutoCookingTimes },
-                        { "Dish", AutoCookingSelectedDish },
-                        { "OCR", AutoCookingSelectedOCR }
+                        { "Dish", AutoCookingSelectedDish }
                     });
         }
 
@@ -365,7 +360,6 @@ namespace AutoHPMA.ViewModels.Pages
         partial void OnSelectedTeamPositionChanged(string value) => SaveSetting(() => _settings.SelectedTeamPosition = value);
         partial void OnAutoCookingTimesChanged(int value) => SaveSetting(() => _settings.AutoCookingTimes = value);
         partial void OnAutoCookingSelectedDishChanged(string value) => SaveSetting(() => _settings.AutoCookingSelectedDish = value);
-        partial void OnAutoCookingSelectedOCRChanged(string value) => SaveSetting(() => _settings.AutoCookingSelectedOCR = value);
 
         private void SaveSetting(Action updateAction)
         {

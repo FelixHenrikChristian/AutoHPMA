@@ -124,11 +124,6 @@
                         <ComboBox MinWidth="120" ItemsSource="{Binding ViewModel.Dishes}" SelectedItem="{Binding ViewModel.AutoCookingSelectedDish, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
-                <controls:SettingRow Title="OCR引擎" Description="选择文字识别引擎">
-                    <controls:SettingRow.SettingContent>
-                        <ComboBox MinWidth="120" ItemsSource="{Binding ViewModel.OCRs}" SelectedItem="{Binding ViewModel.AutoCookingSelectedOCR, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </controls:SettingRow.SettingContent>
-                </controls:SettingRow>
             </StackPanel>
         </ui:CardExpander>
 

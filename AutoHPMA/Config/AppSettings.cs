@@ -28,6 +28,9 @@ namespace AutoHPMA.Config
         [JsonPropertyName("stateMonitorInterval")]
         public int StateMonitorInterval { get; set; } = 200;
 
+        [JsonPropertyName("selectedOCR")]
+        public string SelectedOCR { get; set; } = "PaddleOCR";
+
         // Task
         [JsonPropertyName("answerDelay")]
         public int AnswerDelay { get; set; } = 0;
@@ -49,9 +52,6 @@ namespace AutoHPMA.Config
 
         [JsonPropertyName("autoCookingSelectedDish")]
         public string AutoCookingSelectedDish { get; set; } = "海鱼黄金焗饭";
-
-        [JsonPropertyName("autoCookingSelectedOCR")]
-        public string AutoCookingSelectedOCR { get; set; } = "Tesseract";
 
         // Notification
         [JsonPropertyName("notificationEnabled")]

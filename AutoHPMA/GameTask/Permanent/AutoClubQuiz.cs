@@ -58,14 +58,18 @@ public class AutoClubQuiz : BaseGameTask
     private bool _stopWhenContributionFull = false;
     private int roundIndex = 1;
 
+    // OCR 服务
+    private readonly IOcrService _ocrService;
+
     #endregion
 
     // 状态检测规则
     private StateRule<AutoClubQuizState>[] _stateRules = null!;
 
-    public AutoClubQuiz(ILogger<AutoClubQuiz> logger, nint displayHwnd, nint gameHwnd)
+    public AutoClubQuiz(ILogger<AutoClubQuiz> logger, IOcrService ocrService, nint displayHwnd, nint gameHwnd)
         : base(logger, displayHwnd, gameHwnd)
     {
+        _ocrService = ocrService;
         excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/ClubQuiz", "club_question_bank.xlsx");
         excelHelper = new ExcelHelper(excelPath);
         LoadAssets();
@@ -397,12 +401,12 @@ public class AutoClubQuiz : BaseGameTask
     {
         var captureMat = CaptureAndPreprocess();
 
-        q = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, question_rect));
-        a = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, optionRects['A']));
-        b = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, optionRects['B']));
-        c = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, optionRects['C']));
-        d = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, optionRects['D']));
-        i = PaddleOCRHelper.Instance.Ocr(new Mat(captureMat, index_rect));
+        q = _ocrService.Recognize(new Mat(captureMat, question_rect));
+        a = _ocrService.Recognize(new Mat(captureMat, optionRects['A']));
+        b = _ocrService.Recognize(new Mat(captureMat, optionRects['B']));
+        c = _ocrService.Recognize(new Mat(captureMat, optionRects['C']));
+        d = _ocrService.Recognize(new Mat(captureMat, optionRects['D']));
+        i = _ocrService.Recognize(new Mat(captureMat, index_rect));
     }
 
     private void PrintText()
@@ -433,7 +437,7 @@ public class AutoClubQuiz : BaseGameTask
     private void FindScore()
     {
         var captureMat = CaptureAndPreprocess();
-        string ocrText = PaddleOCRHelper.Instance.Ocr(captureMat);
+        string ocrText = _ocrService.Recognize(captureMat);
         var match = Regex.Match(ocrText, @"\+(\d+)\s*社团贡献\s*\((\d+\/\d+)\)", RegexOptions.Singleline);
 
         if (!match.Success)

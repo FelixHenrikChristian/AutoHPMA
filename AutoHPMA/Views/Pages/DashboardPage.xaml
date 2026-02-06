@@ -123,6 +123,15 @@
                             Value="{Binding ViewModel.StateMonitorInterval, Mode=TwoWay}" />
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
+                <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
+                <controls:SettingRow Title="OCR引擎" Description="选择文字识别引擎">
+                    <controls:SettingRow.SettingContent>
+                        <ComboBox 
+                            MinWidth="120" 
+                            ItemsSource="{Binding ViewModel.OcrEngines}" 
+                            SelectedItem="{Binding ViewModel.SelectedOcrEngine, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </controls:SettingRow.SettingContent>
+                </controls:SettingRow>
             </StackPanel>
         </ui:CardExpander>
 

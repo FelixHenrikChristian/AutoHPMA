@@ -725,8 +725,7 @@ namespace AutoHPMA.ViewModels.Pages
             return SelectedOCR switch
             {
                 "PaddleOCR" => PaddleOCRHelper.Instance.Ocr(mat),
-                "Tesseract" => TesseractOCRHelper.TesseractTextRecognition(
-                    TesseractOCRHelper.PreprocessImage(OpenCvSharp.Extensions.BitmapConverter.ToBitmap(mat))),
+                "Tesseract" => TesseractOCRHelper.Instance.Ocr(mat),
                 _ => string.Empty
             };
         }

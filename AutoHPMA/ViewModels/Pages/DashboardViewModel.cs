@@ -11,6 +11,7 @@ using AutoHPMA.Services;
 using AutoHPMA.Views.Windows;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Threading;
 using Wpf.Ui.Controls;
@@ -43,6 +44,11 @@ namespace AutoHPMA.ViewModels.Pages
 
         [ObservableProperty]
         private int _stateMonitorInterval = 200;
+
+        [ObservableProperty]
+        private string _selectedOcrEngine = "PaddleOCR";
+
+        public ObservableCollection<string> OcrEngines { get; } = ["PaddleOCR", "Tesseract"];
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -110,6 +116,7 @@ namespace AutoHPMA.ViewModels.Pages
             DebugLogEnabled = _settings.DebugLogEnabled;
             MaskWindowEnabled = _settings.MaskWindowEnabled;
             StateMonitorInterval = _settings.StateMonitorInterval;
+            SelectedOcrEngine = _settings.SelectedOCR;
             
             // 初始化AppContextService中的共享配置
             AppContextService.Instance.StateMonitorInterval = _settings.StateMonitorInterval;
@@ -325,6 +332,7 @@ namespace AutoHPMA.ViewModels.Pages
         partial void OnMaskWindowEnabledChanged(bool value) => SaveSetting(() => _settings.MaskWindowEnabled = value);
         partial void OnLogWindowMarqueeEnabledChanged(bool value) => SaveSetting(() => _settings.LogWindowMarqueeEnabled = value);
         partial void OnStateMonitorIntervalChanged(int value) => SaveSetting(() => _settings.StateMonitorInterval = value);
+        partial void OnSelectedOcrEngineChanged(string value) => SaveSetting(() => _settings.SelectedOCR = value);
 
         private void SaveSetting(Action updateAction)
         {

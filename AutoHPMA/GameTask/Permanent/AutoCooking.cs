@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using static AutoHPMA.Helpers.WindowInteractionHelper;
 using Point = OpenCvSharp.Point;
 using Rect = OpenCvSharp.Rect;
-using Size = OpenCvSharp.Size;
 
 namespace AutoHPMA.GameTask.Permanent;
 
@@ -78,7 +77,7 @@ public class AutoCooking : BaseGameTask
     private Dictionary<string, int> condimentCounts = new();
 
     // OCR
-    private string _autoCookingSelectedOCR = "Tesseract";
+    private readonly IOcrService _ocrService;
 
     // 厨具烹饪进度监测任务
     private Task? _cookingProgressMonitorTask;
@@ -89,10 +88,11 @@ public class AutoCooking : BaseGameTask
     // 状态检测规则
     private StateRule<AutoCookingState>[] _stateRules = null!;
 
-    public AutoCooking(ILogger<AutoCooking> logger, CookingConfigService cookingConfigService, nint displayHwnd, nint gameHwnd)
+    public AutoCooking(ILogger<AutoCooking> logger, CookingConfigService cookingConfigService, IOcrService ocrService, nint displayHwnd, nint gameHwnd)
         : base(logger, displayHwnd, gameHwnd)
     {
         _cookingConfigService = cookingConfigService;
+        _ocrService = ocrService;
         LoadAssets();
         CalOffset();
         InitStateRules();
@@ -748,18 +748,6 @@ public class AutoCooking : BaseGameTask
                 _logger.LogDebug("菜品设置为：{Dish}", _autoCookingDish);
             }
 
-            if (TryGetParameter(parameters, "OCR", out string ocr))
-            {
-                if (string.IsNullOrEmpty(ocr))
-                {
-                    _logger.LogWarning("无效的OCR选择。已设置为默认值。");
-                    return false;
-                }
-                
-                _autoCookingSelectedOCR = ocr;
-                _logger.LogDebug("OCR引擎设置为：{OCR}", _autoCookingSelectedOCR);
-            }
-
             return true;
         }
         catch (Exception ex)
@@ -771,15 +759,7 @@ public class AutoCooking : BaseGameTask
 
     private string OcrText(Mat mat)
     {
-        if (_autoCookingSelectedOCR == "PaddleOCR")
-        {
-            return PaddleOCRHelper.Instance.Ocr(mat);
-        }
-        else
-        {
-            using var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(mat);
-            return TesseractOCRHelper.TesseractTextRecognition(TesseractOCRHelper.PreprocessImage(bitmap));
-        }
+        return _ocrService.Recognize(mat);
     }
 
     #endregion

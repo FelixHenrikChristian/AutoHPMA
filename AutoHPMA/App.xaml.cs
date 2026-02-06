@@ -94,6 +94,7 @@ namespace AutoHPMA
                 services.AddSingleton<SettingsViewModel>();
 
                 services.AddSingleton<CookingConfigService>();
+                services.AddSingleton<IOcrService, OcrService>();
                 
                 // 注册更新服务
                 services.AddSingleton<IUpdateService, UpdateService>();
