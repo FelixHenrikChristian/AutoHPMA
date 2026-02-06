@@ -60,18 +60,12 @@
             </ui:NavigationView>
             <ContentPresenter x:Name="RootContentDialog" Grid.Row="0" />
         </Grid>
-        <Grid Panel.ZIndex="1000" IsHitTestVisible="False">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20">
-                    <ui:SnackbarPresenter x:Name="SnackbarPresenter" IsHitTestVisible="True"/>
-                </Border>
-            </Grid>
-        </Grid>
+        <ui:SnackbarPresenter 
+            x:Name="SnackbarPresenter" 
+            HorizontalAlignment="Center" 
+            VerticalAlignment="Bottom" 
+            Margin="0,0,0,20"
+            Panel.ZIndex="1000"/>
     </Grid>
 
 </ui:FluentWindow>
