@@ -32,7 +32,7 @@
             </ui:CardExpander.Header>
             <StackPanel>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="答题延迟（ms）" Description="匹配答案后的点击延时">
+                <controls:SettingRow Title="答题延迟（ms）" Description="匹配到正确答案后执行点击操作的等待时间">
                     <controls:SettingRow.SettingContent>
                         <ui:NumberBox 
                             Icon="{ui:SymbolIcon NumberSymbolSquare24}"
@@ -44,7 +44,7 @@
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="加入学院互助" Description="当社团未开启社团答题时，尝试加入学院互助频道的答题活动">
+                <controls:SettingRow Title="学院互助答题" Description="当所在社团答题未开启时，尝试加入学院互助频道的答题活动">
                     <controls:SettingRow.SettingContent>
                         <ui:ToggleSwitch 
                             OnContent="On" OffContent="Off"
@@ -52,7 +52,7 @@
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="贡献满时停止" Description="当本周社团贡献已达上限时，自动停止答题任务">
+                <controls:SettingRow Title="满贡终止答题" Description="检测到本周社团贡献已达上限时，自动终止答题任务">
                     <controls:SettingRow.SettingContent>
                         <ui:ToggleSwitch 
                             OnContent="On" OffContent="Off"
@@ -60,7 +60,7 @@
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="打开题库目录" Description="点击打开题库文件所在目录">
+                <controls:SettingRow Title="打开题库目录" Description="打开题库文件的存储目录">
                     <controls:SettingRow.SettingContent>
                         <ui:Button Command="{Binding ViewModel.OpenQuestionBankCommand}" Content="打开" Icon="{ui:SymbolIcon FolderOpen24}" />
                     </controls:SettingRow.SettingContent>
@@ -78,7 +78,7 @@
             </ui:CardExpander.Header>
             <StackPanel>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="禁林次数" Description="在执行目标次数后终止">
+                <controls:SettingRow Title="执行次数" Description="完成指定次数后自动停止任务">
                     <controls:SettingRow.SettingContent>
                         <ui:NumberBox 
                             Icon="{ui:SymbolIcon NumberSymbolSquare24}"
@@ -90,7 +90,7 @@
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="组队身份" Description="选择正确的身份，以确保正常开始探索">
+                <controls:SettingRow Title="组队身份" Description="选择当前角色在队伍中的身份">
                     <controls:SettingRow.SettingContent>
                         <ComboBox MinWidth="80" ItemsSource="{Binding ViewModel.TeamPositions}" SelectedItem="{Binding ViewModel.SelectedTeamPosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </controls:SettingRow.SettingContent>
@@ -108,7 +108,7 @@
             </ui:CardExpander.Header>
             <StackPanel>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="烹饪次数" Description="在执行目标次数后终止">
+                <controls:SettingRow Title="执行次数" Description="完成指定次数后自动停止任务">
                     <controls:SettingRow.SettingContent>
                         <ui:NumberBox 
                             Icon="{ui:SymbolIcon NumberSymbolSquare24}"
@@ -119,7 +119,7 @@
                             Value="{Binding ViewModel.AutoCookingTimes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
-                <controls:SettingRow Title="选择菜品" Description="选择要烹饪的菜品">
+                <controls:SettingRow Title="目标菜品" Description="选择烹饪菜品">
                     <controls:SettingRow.SettingContent>
                         <ComboBox MinWidth="120" ItemsSource="{Binding ViewModel.Dishes}" SelectedItem="{Binding ViewModel.AutoCookingSelectedDish, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </controls:SettingRow.SettingContent>
