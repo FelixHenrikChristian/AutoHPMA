@@ -65,7 +65,7 @@ namespace AutoHPMA.Config
         public bool HasShownTermsOfUse { get; set; }
 
         [JsonPropertyName("theme")]
-        public string Theme { get; set; } = "Light";
+        public string Theme { get; set; } = "System";
 
         [JsonPropertyName("language")]
         public string Language { get; set; } = "zh-CN";

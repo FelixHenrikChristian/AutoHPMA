@@ -14,6 +14,7 @@ using System.Reflection;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using System.Windows.Media;
 
 namespace AutoHPMA.ViewModels.Pages
 {
@@ -38,14 +39,15 @@ namespace AutoHPMA.ViewModels.Pages
 
         public class ThemeOption
         {
-            public ApplicationTheme Theme { get; set; }
+            public string ThemeKey { get; set; }  // "Light", "Dark", or "System"
             public string Name { get; set; }
         }
 
         private readonly ThemeOption[] _themeOptions = new[]
         {
-            new ThemeOption { Theme = ApplicationTheme.Light, Name = "浅色" },
-            new ThemeOption { Theme = ApplicationTheme.Dark, Name = "深色" }
+            new ThemeOption { ThemeKey = "System", Name = "跟随系统" },
+            new ThemeOption { ThemeKey = "Light", Name = "浅色" },
+            new ThemeOption { ThemeKey = "Dark", Name = "深色" }
         };
 
         public IEnumerable<ThemeOption> ThemeOptions => _themeOptions;
@@ -55,6 +57,9 @@ namespace AutoHPMA.ViewModels.Pages
             _settings = settings;
             _updateService = updateService;
             LogFileLimit = _settings.LogFileLimit;
+            
+            // Subscribe to theme changes to handle "follow system" mode
+            ApplicationThemeManager.Changed += OnApplicationThemeChanged;
         }
 
         public Task OnNavigatedToAsync()
@@ -69,19 +74,51 @@ namespace AutoHPMA.ViewModels.Pages
 
         private void InitializeViewModel()
         {
-            var systemTheme = GetSystemTheme();
+            // Load saved theme preference
+            var savedTheme = _settings.Theme;
+            SelectedThemeOption = _themeOptions.FirstOrDefault(t => t.ThemeKey == savedTheme) 
+                                  ?? _themeOptions.First(); // Default to "System"
             
-            SelectedThemeOption = _themeOptions.FirstOrDefault(t => t.Theme == systemTheme);
-            
-            CurrentTheme = systemTheme;
-            
-            ApplicationThemeManager.Apply(systemTheme);
+            // Apply the theme based on saved preference
+            ApplyTheme(savedTheme);
 
-            //AppVersion = $"v{GetAssemblyVersion()}";
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             AppVersion = $"v{version.Major}.{version.Minor}.{version.Build}";
 
             _isInitialized = true;
+        }
+        
+        private void OnApplicationThemeChanged(ApplicationTheme currentTheme, Color accentColor)
+        {
+            // Update the current theme when it changes (e.g., by SystemThemeWatcher)
+            if (_settings.Theme == "System")
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CurrentTheme = currentTheme;
+                });
+            }
+        }
+        
+        private void ApplyTheme(string themeKey)
+        {
+            ApplicationTheme appTheme;
+            
+            if (themeKey == "System")
+            {
+                appTheme = GetSystemTheme();
+            }
+            else if (themeKey == "Dark")
+            {
+                appTheme = ApplicationTheme.Dark;
+            }
+            else
+            {
+                appTheme = ApplicationTheme.Light;
+            }
+            
+            ApplicationThemeManager.Apply(appTheme);
+            CurrentTheme = appTheme;
         }
 
         private ApplicationTheme GetSystemTheme()
@@ -113,32 +150,16 @@ namespace AutoHPMA.ViewModels.Pages
                 ?? String.Empty;
         }
 
-        partial void OnCurrentThemeChanged(ApplicationTheme value)
-        {
-            SelectedThemeOption = _themeOptions.FirstOrDefault(t => t.Theme == value);
-        }
-
         partial void OnSelectedThemeOptionChanged(ThemeOption value)
         {
-            if (value != null)
+            if (value != null && _isInitialized)
             {
-                OnChangeTheme(value.Theme);
-            }
-        }
-
-        public void OnChangeTheme(ApplicationTheme theme)
-        {
-            if (CurrentTheme == theme)
-                return;
-
-            try
-            {
-                ApplicationThemeManager.Apply(theme);
-                CurrentTheme = theme;
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"切换主题时发生错误: {ex.Message}");
+                // Apply the theme
+                ApplyTheme(value.ThemeKey);
+                
+                // Save the preference
+                _settings.Theme = value.ThemeKey;
+                _settings.Save();
             }
         }
 
