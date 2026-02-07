@@ -19,8 +19,8 @@ namespace AutoHPMA.Config
         [JsonPropertyName("logWindowMarqueeEnabled")]
         public bool LogWindowMarqueeEnabled { get; set; } = true;
 
-        [JsonPropertyName("debugLogEnabled")]
-        public bool DebugLogEnabled { get; set; } = false;
+        [JsonPropertyName("hideDebugLog")]
+        public bool HideDebugLog { get; set; } = true;
 
         [JsonPropertyName("maskWindowEnabled")]
         public bool MaskWindowEnabled { get; set; } = true;

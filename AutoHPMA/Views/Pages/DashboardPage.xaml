@@ -172,7 +172,7 @@
             </ui:CardExpander.Header>
             <StackPanel>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="启用日志滚动" Description="当日志内容超出显示区域时自动滚动播放">
+                <controls:SettingRow Title="启用日志滚动" Description="当日志内容超出显示区域时，自动循环滚动播放">
                     <controls:SettingRow.SettingContent>
                         <ui:ToggleSwitch 
                             OnContent="On" OffContent="Off"
@@ -180,11 +180,11 @@
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
                 <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
-                <controls:SettingRow Title="输出调试日志" Description="启用后将输出详细的调试信息，便于排查问题">
+                <controls:SettingRow Title="隐藏调试日志" Description="启用后将隐藏详细的调试信息，关闭后可输出调试信息以便排查问题">
                     <controls:SettingRow.SettingContent>
                         <ui:ToggleSwitch 
                             OnContent="On" OffContent="Off"
-                            IsChecked="{Binding ViewModel.DebugLogEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            IsChecked="{Binding ViewModel.HideDebugLog, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </controls:SettingRow.SettingContent>
                 </controls:SettingRow>
             </StackPanel>

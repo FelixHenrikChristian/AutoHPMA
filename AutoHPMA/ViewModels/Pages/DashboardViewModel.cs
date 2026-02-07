@@ -37,10 +37,10 @@ namespace AutoHPMA.ViewModels.Pages
         private bool _logWindowMarqueeEnabled = true;
 
         [ObservableProperty]
-        private bool _debugLogEnabled = false;
+        private bool _hideDebugLog = true;
 
         [ObservableProperty]
-        private bool _maskWindowEnabled = false;
+        private bool _maskWindowEnabled = true;
 
         [ObservableProperty]
         private bool _maskWindowShowTextLabels = true;
@@ -116,7 +116,7 @@ namespace AutoHPMA.ViewModels.Pages
         {
             LogWindowEnabled = _settings.LogWindowEnabled;
             LogWindowMarqueeEnabled = _settings.LogWindowMarqueeEnabled;
-            DebugLogEnabled = _settings.DebugLogEnabled;
+            HideDebugLog = _settings.HideDebugLog;
             MaskWindowEnabled = _settings.MaskWindowEnabled;
             MaskWindowShowTextLabels = _settings.MaskWindowShowTextLabels;
             StateMonitorInterval = _settings.StateMonitorInterval;
@@ -220,7 +220,7 @@ namespace AutoHPMA.ViewModels.Pages
                 _logWindow.Show();
                 _logWindow.ShowInTaskbar = false;
                 _logWindow.RefreshPosition(_gameHwnd);
-                _logWindow.ShowDebugLogs = DebugLogEnabled;
+                _logWindow.ShowDebugLogs = !HideDebugLog;
                 _logWindow.ShowMarquee = LogWindowMarqueeEnabled;
                 
                 _logger.LogInformation("检测到[Yellow]{StartupOption}[/Yellow]已启动", _startupOption);
@@ -333,7 +333,7 @@ namespace AutoHPMA.ViewModels.Pages
 
 
         partial void OnLogWindowEnabledChanged(bool value) => SaveSetting(() => _settings.LogWindowEnabled = value);
-        partial void OnDebugLogEnabledChanged(bool value) => SaveSetting(() => _settings.DebugLogEnabled = value);
+        partial void OnHideDebugLogChanged(bool value) => SaveSetting(() => _settings.HideDebugLog = value);
         partial void OnMaskWindowEnabledChanged(bool value) => SaveSetting(() => _settings.MaskWindowEnabled = value);
         partial void OnMaskWindowShowTextLabelsChanged(bool value) => SaveSetting(() => _settings.MaskWindowShowTextLabels = value);
         partial void OnLogWindowMarqueeEnabledChanged(bool value) => SaveSetting(() => _settings.LogWindowMarqueeEnabled = value);
