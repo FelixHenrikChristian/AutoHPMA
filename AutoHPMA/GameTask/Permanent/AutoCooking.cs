@@ -123,6 +123,12 @@ public class AutoCooking : BaseGameTask
             // 状态变化时，立即取消当前正在进行的操作
             CancelCurrentOperation();
             _logger.LogDebug("状态从 {OldState} 变为 {NewState}，已取消当前操作", _state, newState);
+            
+            // 从烹饪状态离开时，立即清除识别框
+            if (_state == AutoCookingState.Cooking && newState != AutoCookingState.Cooking)
+            {
+                ClearCookingLayers();
+            }
         }
         _state = newState;
         if (newState != AutoCookingState.Unknown)
