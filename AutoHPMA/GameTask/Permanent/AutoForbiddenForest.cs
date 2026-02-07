@@ -173,8 +173,22 @@ public class AutoForbiddenForest : BaseGameTask
                 var thumbResult = Find(GetImage("over_thumb"), new MatchOptions { FindMultiple = true });
                 if (thumbResult.Success)
                 {
-                    ShowMatchRects(thumbResult);
-                    await ClickMultiMatchCentersAsync(thumbResult);
+                    // 逐个显示检测框并点击
+                    for (int i = 0; i < thumbResult.RectsUnscaled.Count; i++)
+                    {
+                        var rect = thumbResult.RectsUnscaled[i];
+                        var scaledRect = thumbResult.Rects[i];
+                        
+                        // 显示当前点击目标的检测框
+                        _maskWindow?.AddTemporaryRect(scaledRect, durationMs: 1000);
+                        
+                        // 点击目标中心
+                        var centerX = rect.X + thumbResult.TemplateSize.Width / 2.0;
+                        var centerY = rect.Y + thumbResult.TemplateSize.Height / 2.0;
+                        await ClickAsync(new OpenCvSharp.Point((int)centerX, (int)centerY));
+                        
+                        await Task.Delay(1000, _cts.Token);
+                    }
                 }
                 
                 await Task.Delay(1500, _cts.Token);

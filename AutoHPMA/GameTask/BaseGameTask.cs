@@ -379,26 +379,6 @@ namespace AutoHPMA.GameTask
         }
 
         /// <summary>
-        /// 点击多个匹配结果的中心位置
-        /// </summary>
-        /// <param name="result">匹配结果</param>
-        /// <param name="delayMs">每次点击之间的延迟（毫秒）</param>
-        protected async Task ClickMultiMatchCentersAsync(MatchResult result, int delayMs = 1000)
-        {
-            if (!result.Success) return;
-
-            foreach (var rect in result.RectsUnscaled)
-            {
-                var token = OperationToken;
-                token.ThrowIfCancellationRequested();
-                var centerX = rect.X + result.TemplateSize.Width / 2.0;
-                var centerY = rect.Y + result.TemplateSize.Height / 2.0;
-                await ClickAsync(new Point((int)centerX, (int)centerY));
-                await Task.Delay(delayMs, token);
-            }
-        }
-
-        /// <summary>
         /// 尝试查找并点击模板，成功时自动显示检测框
         /// </summary>
         /// <param name="template">模板图像</param>
