@@ -226,6 +226,14 @@
                 </Grid>
             </ui:CardExpander.Header>
             <StackPanel>
+                <Separator Margin="-18,0" BorderThickness="0,1,0,0" />
+                <controls:SettingRow Title="显示文本标签" Description="在检测框上显示识别结果的文字说明">
+                    <controls:SettingRow.SettingContent>
+                        <ui:ToggleSwitch 
+                            OnContent="On" OffContent="Off"
+                            IsChecked="{Binding ViewModel.MaskWindowShowTextLabels, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </controls:SettingRow.SettingContent>
+                </controls:SettingRow>
             </StackPanel>
         </ui:CardExpander>
 

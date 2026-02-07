@@ -25,6 +25,9 @@ namespace AutoHPMA.Config
         [JsonPropertyName("maskWindowEnabled")]
         public bool MaskWindowEnabled { get; set; } = true;
 
+        [JsonPropertyName("maskWindowShowTextLabels")]
+        public bool MaskWindowShowTextLabels { get; set; } = true;
+
         [JsonPropertyName("stateMonitorInterval")]
         public int StateMonitorInterval { get; set; } = 200;
 

@@ -43,6 +43,9 @@ namespace AutoHPMA.ViewModels.Pages
         private bool _maskWindowEnabled = false;
 
         [ObservableProperty]
+        private bool _maskWindowShowTextLabels = true;
+
+        [ObservableProperty]
         private int _stateMonitorInterval = 200;
 
         [ObservableProperty]
@@ -115,6 +118,7 @@ namespace AutoHPMA.ViewModels.Pages
             LogWindowMarqueeEnabled = _settings.LogWindowMarqueeEnabled;
             DebugLogEnabled = _settings.DebugLogEnabled;
             MaskWindowEnabled = _settings.MaskWindowEnabled;
+            MaskWindowShowTextLabels = _settings.MaskWindowShowTextLabels;
             StateMonitorInterval = _settings.StateMonitorInterval;
             SelectedOcrEngine = _settings.SelectedOCR;
             
@@ -229,6 +233,7 @@ namespace AutoHPMA.ViewModels.Pages
                 _maskWindow.Show();
                 _maskWindow.ShowInTaskbar = false;
                 _maskWindow.RefreshPosition(_displayHwnd);
+                _maskWindow.ShowTextLabels = MaskWindowShowTextLabels;
             }
 
             _capture = new WindowsGraphicsCapture();
@@ -330,6 +335,7 @@ namespace AutoHPMA.ViewModels.Pages
         partial void OnLogWindowEnabledChanged(bool value) => SaveSetting(() => _settings.LogWindowEnabled = value);
         partial void OnDebugLogEnabledChanged(bool value) => SaveSetting(() => _settings.DebugLogEnabled = value);
         partial void OnMaskWindowEnabledChanged(bool value) => SaveSetting(() => _settings.MaskWindowEnabled = value);
+        partial void OnMaskWindowShowTextLabelsChanged(bool value) => SaveSetting(() => _settings.MaskWindowShowTextLabels = value);
         partial void OnLogWindowMarqueeEnabledChanged(bool value) => SaveSetting(() => _settings.LogWindowMarqueeEnabled = value);
         partial void OnStateMonitorIntervalChanged(int value) => SaveSetting(() => _settings.StateMonitorInterval = value);
         partial void OnSelectedOcrEngineChanged(string value) => SaveSetting(() => _settings.SelectedOCR = value);

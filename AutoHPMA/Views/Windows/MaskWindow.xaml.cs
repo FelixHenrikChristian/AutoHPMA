@@ -60,6 +60,9 @@ public partial class MaskWindow : System.Windows.Window
     private double _dpiX = 1.0;
     private double _dpiY = 1.0;
 
+    // 是否显示文本标签
+    public bool ShowTextLabels { get; set; } = true;
+
     #endregion
 
     #region 构造函数
@@ -334,7 +337,7 @@ public partial class MaskWindow : System.Windows.Window
         Canvas.SetTop(shape, rect.Y * _dpiY);
         _canvas.Children.Add(shape);
 
-        if (!string.IsNullOrEmpty(text))
+        if (ShowTextLabels && !string.IsNullOrEmpty(text))
         {
             var textBlock = new TextBlock
             {
