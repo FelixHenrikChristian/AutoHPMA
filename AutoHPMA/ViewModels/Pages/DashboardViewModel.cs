@@ -51,7 +51,7 @@ namespace AutoHPMA.ViewModels.Pages
         [ObservableProperty]
         private string _selectedOcrEngine = "PaddleOCR";
 
-        public ObservableCollection<string> OcrEngines { get; } = ["PaddleOCR", "Tesseract"];
+        public ObservableCollection<string> OcrEngines { get; } = ["PaddleOCR", "Tesseract", "WindowsOCR", "RapidOCR"];
 
         [ObservableProperty]
         private bool _isRunning = false;

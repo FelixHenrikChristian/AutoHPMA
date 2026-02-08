@@ -46,7 +46,7 @@
                                 <StackPanel>
                                     <!-- 标题 -->
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Settings24" FontSize="16"/>
+                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Settings24" FontSize="16" Foreground="{ui:ThemeResource AccentTextFillColorPrimaryBrush}"/>
                                         <ui:TextBlock FontTypography="BodyStrong" Text="截屏配置" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     

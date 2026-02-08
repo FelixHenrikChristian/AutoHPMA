@@ -8,7 +8,9 @@ namespace AutoHPMA.Services;
 public enum OcrEngineType
 {
     PaddleOCR,
-    Tesseract
+    Tesseract,
+    WindowsOCR,
+    RapidOCR
 }
 
 /// <summary>

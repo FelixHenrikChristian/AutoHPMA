@@ -26,7 +26,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OfficeOpenXml.Extension.AspNetCore" Version="1.0.0" />
 	<PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
@@ -43,15 +43,16 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
     <PackageReference Include="Tesseract" Version="5.2.0" />
     <PackageReference Include="Tesseract.Drawing" Version="5.2.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.0" />
     <PackageReference Include="Vanara.PInvoke.DwmApi" Version="3.4.17" />
     <PackageReference Include="Vanara.PInvoke.Kernel32" Version="3.4.17" />
     <PackageReference Include="Vanara.PInvoke.SHCore" Version="3.4.17" />
     <PackageReference Include="Vanara.PInvoke.User32" Version="3.4.17" />
     <PackageReference Include="Vanara.Windows.Extensions" Version="3.4.17" />
-    <PackageReference Include="WPF-UI" Version="4.1.0" />
+    <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0 " />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2 " />
-    <PackageReference Include="WPF-UI.DependencyInjection" Version="4.0.2" />
+    <PackageReference Include="WPF-UI.DependencyInjection" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -150,6 +151,15 @@
     <None Remove="Assets\hpma.png" />
     <None Remove="Assets\Logo.ico" />
     <None Remove="Assets\ClubQuiz\Gather.png" />
+    <None Remove="Assets\Models\ch_PP-OCRv4_det_infer.onnx" />
+    <None Remove="Assets\Models\ch_PP-OCRv4_rec_infer.onnx" />
+    <None Remove="Assets\Models\PP-OCRv5_server_det_infer.onnx" />
+    <None Remove="Assets\Models\PP-OCRv5_server_rec_infer.onnx" />
+    <None Remove="Assets\Models\ppocr_keys_v1.txt" />
+    <None Remove="Assets\Models\RapidOCR\PP-OCRv5_server_det_infer.onnx" />
+    <None Remove="Assets\Models\RapidOCR\PP-OCRv5_server_rec_infer.onnx" />
+    <None Remove="Assets\Models\RapidOCR\PP-OCRv5_server_rec_infer.yml" />
+    <None Remove="Assets\Models\RapidOCR\ppocr_keys_v5.txt" />
     <None Remove="Assets\SweetAdventure\Image\gaming_candy.png" />
     <None Remove="Assets\SweetAdventure\Image\gaming_forward.png" />
     <None Remove="Assets\SweetAdventure\Image\gaming_monster.png" />
@@ -478,6 +488,18 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\hpma.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\RapidOCR\PP-OCRv5_server_det_infer.onnx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\RapidOCR\PP-OCRv5_server_rec_infer.onnx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\RapidOCR\PP-OCRv5_server_rec_infer.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\RapidOCR\ppocr_keys_v5.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\SweetAdventure\Image\gaming_candy.png">
