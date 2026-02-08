@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using Windows.Win32.Foundation;
@@ -19,6 +20,11 @@ public sealed class BitBltCapture : IScreenCapture
 {
     private nint _hWnd;
     private bool _isDisposed;
+
+    // P/Invoke for checking window minimized state
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsIconic(nint hWnd);
 
     /// <inheritdoc/>
     public bool IsCapturing { get; private set; }
@@ -51,6 +57,10 @@ public sealed class BitBltCapture : IScreenCapture
             return null;
 
         HWND hwnd = new(_hWnd);
+
+        // 检查窗口是否最小化
+        if (IsIconic(_hWnd))
+            return null;
         
         try
         {

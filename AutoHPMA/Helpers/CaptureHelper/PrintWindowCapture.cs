@@ -51,6 +51,13 @@ public sealed class PrintWindowCapture : IScreenCapture
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool DeleteObject(nint hObject);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsIconic(nint hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern nint GetDC(nint hWnd);
+
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
     {
@@ -96,6 +103,10 @@ public sealed class PrintWindowCapture : IScreenCapture
         if (!IsCapturing || _hWnd == nint.Zero)
             return null;
 
+        // 检查窗口是否最小化
+        if (IsIconic(_hWnd))
+            return null;
+
         try
         {
             // 获取客户区大小
@@ -108,7 +119,8 @@ public sealed class PrintWindowCapture : IScreenCapture
             if (width <= 0 || height <= 0)
                 return null;
 
-            var hdcWindow = GetWindowDC(_hWnd);
+            // 使用 GetDC 而不是 GetWindowDC，因为我们使用 PW_CLIENTONLY 只捕获客户区
+            var hdcWindow = GetDC(_hWnd);
             if (hdcWindow == nint.Zero)
                 return null;
 

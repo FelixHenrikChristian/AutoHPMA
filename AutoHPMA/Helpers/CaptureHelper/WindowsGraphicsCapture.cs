@@ -34,6 +34,9 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
 
     private ResourceRegion? _region;
 
+    // 线程安全标志
+    private volatile bool _isStopping;
+
     // HDR相关
     private bool _isHdrEnabled;
     private DirectXPixelFormat _pixelFormat = DirectXPixelFormat.B8G8R8A8UIntNormalized;
@@ -109,11 +112,19 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
         ResourceRegion region = new();
         DwmApi.DwmGetWindowAttribute<RECT>(hWnd, DwmApi.DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, out var windowRect);
         User32.GetClientRect(_hWnd, out var clientRect);
+        
+        // 使用 ClientToScreen 获取客户区相对于屏幕的位置，计算准确的偏移
+        var clientTopLeft = new POINT(0, 0);
+        User32.ClientToScreen(_hWnd, ref clientTopLeft);
+        
+        // 计算客户区相对于窗口扩展边框的偏移
+        int leftOffset = clientTopLeft.X - windowRect.Left;
+        int topOffset = clientTopLeft.Y - windowRect.Top;
 
-        region.Left = 0;
-        region.Top = windowRect.Height - clientRect.Height;
-        region.Right = clientRect.Width;
-        region.Bottom = windowRect.Height;
+        region.Left = leftOffset;
+        region.Top = topOffset;
+        region.Right = leftOffset + clientRect.Width;
+        region.Bottom = topOffset + clientRect.Height;
         region.Front = 0;
         region.Back = 1;
 
@@ -141,6 +152,10 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
 
     private void OnFrameArrived(Direct3D11CaptureFramePool sender, object args)
     {
+        // 线程安全检查：如果正在停止，跳过帧处理
+        if (_isStopping)
+            return;
+
         using var frame = sender.TryGetNextFrame();
         if (frame == null)
             return;
@@ -224,8 +239,8 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
         }
         finally
         {
-            // 取消映射纹理
-            d3dDevice.ImmediateContext.UnmapSubresource(surfaceTexture, 0);
+            // 取消映射纹理（注意：必须是 stagingTexture，而不是 surfaceTexture）
+            d3dDevice.ImmediateContext.UnmapSubresource(stagingTexture, 0);
         }
     }
 
@@ -268,6 +283,9 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
         if (!IsCapturing)
             return;
 
+        // 设置停止标志，防止 OnFrameArrived 竞态条件
+        _isStopping = true;
+
         _captureSession?.Dispose();
         _captureFramePool?.Dispose();
         _captureSession = null;
@@ -280,6 +298,7 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
 
         _hWnd = nint.Zero;
         IsCapturing = false;
+        _isStopping = false;
 
         // 释放最新帧
         _frameAccessLock.EnterWriteLock();
