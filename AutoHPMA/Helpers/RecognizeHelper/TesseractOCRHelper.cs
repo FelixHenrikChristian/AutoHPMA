@@ -16,7 +16,7 @@ public class TesseractOCRHelper : IDisposable
     
     public static TesseractOCRHelper Instance => _instance.Value;
 
-    private static readonly string TessDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
+    private static readonly string TessDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Models", "OCR", "TesseractOCR");
     
     private readonly TesseractEngine _engine;
     private bool _isDisposed;

@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:converters="clr-namespace:AutoHPMA.Converters"
-    xmlns:helperConverters="clr-namespace:AutoHPMA.Helpers.Converters"
     DispatcherUnhandledException="OnDispatcherUnhandledException"
     Exit="OnExit"
     Startup="OnStartup">
@@ -24,7 +23,7 @@
             <converters:ActionTypeToDragVisibilityConverter x:Key="ActionTypeToDragVisibilityConverter" />
             <converters:ActionTypeToDurationVisibilityConverter x:Key="ActionTypeToDurationVisibilityConverter" />
             <converters:ActionTypeToTimesVisibilityConverter x:Key="ActionTypeToTimesVisibilityConverter" />
-            <helperConverters:TaskTypeToIsRunningConverter x:Key="TaskTypeToIsRunningConverter" />
+            <converters:TaskTypeToIsRunningConverter x:Key="TaskTypeToIsRunningConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

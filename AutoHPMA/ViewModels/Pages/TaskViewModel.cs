@@ -125,13 +125,13 @@ namespace AutoHPMA.ViewModels.Pages
 
         private void LoadDishes()
         {
-            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Cooking/Config");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/Cooking/Config");
             if (!Directory.Exists(configPath)) return;
 
             foreach (var file in Directory.GetFiles(configPath, "*.json"))
             {
                 var json = File.ReadAllText(file);
-                var config = System.Text.Json.JsonSerializer.Deserialize<Models.Cooking.DishConfig>(json);
+                var config = System.Text.Json.JsonSerializer.Deserialize<Models.DishConfig>(json);
                 if (config != null)
                 {
                     Dishes.Add(config.Name);
@@ -328,7 +328,7 @@ namespace AutoHPMA.ViewModels.Pages
         [RelayCommand]
         private void OnOpenQuestionBank(object sender)
         {
-            var questionBankPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/ClubQuiz");
+            var questionBankPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/ClubQuiz");
             if (!Directory.Exists(questionBankPath))
             {
                 Directory.CreateDirectory(questionBankPath);

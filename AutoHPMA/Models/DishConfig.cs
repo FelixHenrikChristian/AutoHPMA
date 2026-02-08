@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AutoHPMA.Models.Cooking;
+namespace AutoHPMA.Models;
 
 public class DishConfig
 {

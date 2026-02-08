@@ -65,7 +65,7 @@ public class AutoForbiddenForest : BaseGameTask
 
     private void LoadAssets()
     {
-        string imageFolder = "Assets/ForbiddenForest/Image/";
+        string imageFolder = "Assets/Tasks/ForbiddenForest/Image/";
         // 加载普通图片（Color模式）
         LoadImagesFromDirectory(imageFolder);
         // 单独加载需要 Alpha 通道的图片

@@ -2,7 +2,7 @@ using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Helpers.RecognizeHelper;
-using AutoHPMA.Models.Cooking;
+using AutoHPMA.Models;
 using AutoHPMA.Services;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
@@ -661,7 +661,7 @@ public class AutoCooking : BaseGameTask
 
     public void LoadAssets()
     {
-        string image_folder = "Assets/Cooking/Image/";
+        string image_folder = "Assets/Tasks/Cooking/Image/";
         _logger.LogInformation("开始加载图片资源");
 
         // 加载根目录的UI图片到_images字典

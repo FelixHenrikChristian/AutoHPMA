@@ -70,7 +70,7 @@ public class AutoClubQuiz : BaseGameTask
         : base(logger, displayHwnd, gameHwnd)
     {
         _ocrService = ocrService;
-        excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/ClubQuiz", "club_question_bank.xlsx");
+        excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/ClubQuiz", "club_question_bank.xlsx");
         excelHelper = new ExcelHelper(excelPath);
         LoadAssets();
         CalOffset();
@@ -96,7 +96,7 @@ public class AutoClubQuiz : BaseGameTask
 
     public void LoadAssets()
     {
-        LoadImagesFromDirectory("Assets/ClubQuiz/Image/");
+        LoadImagesFromDirectory("Assets/Tasks/ClubQuiz/Image/");
     }
 
     public override async void Start()

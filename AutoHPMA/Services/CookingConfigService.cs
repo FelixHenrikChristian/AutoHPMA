@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using AutoHPMA.Models.Cooking;
+using AutoHPMA.Models;
 using Microsoft.Extensions.Logging;
 
 namespace AutoHPMA.Services;
@@ -17,7 +17,7 @@ public class CookingConfigService
     {
         _logger = logger;
         _dishConfigs = new Dictionary<string, DishConfig>();
-        _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Cooking/Config");
+        _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/Cooking/Config");
         
         if (!Directory.Exists(_configPath))
         {

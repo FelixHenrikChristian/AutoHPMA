@@ -54,7 +54,7 @@ public class AutoSweetAdventure : BaseGameTask
 
     private void LoadAssets()
     {
-        LoadImagesFromDirectory("Assets/SweetAdventure/Image/");
+        LoadImagesFromDirectory("Assets/Tasks/SweetAdventure/Image/");
     }
 
     public override async void Start()

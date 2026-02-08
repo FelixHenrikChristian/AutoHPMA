@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows.Data;
 using AutoHPMA.ViewModels.Pages;
 
-namespace AutoHPMA.Helpers.Converters
+namespace AutoHPMA.Converters
 {
     /// <summary>
     /// 将 TaskType 转换为 bool，用于判断指定任务是否正在运行

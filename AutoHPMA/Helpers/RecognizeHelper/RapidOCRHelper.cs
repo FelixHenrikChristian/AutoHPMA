@@ -20,7 +20,7 @@ public class RapidOCRHelper : IDisposable
 
     public static RapidOCRHelper Instance => _instance.Value;
 
-    private static readonly string ModelsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Models", "RapidOCR");
+    private static readonly string ModelsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Models", "OCR", "RapidOCR");
     
     // PP-OCRv5 模型路径
     private static readonly string DetModelPath = Path.Combine(ModelsPath, "PP-OCRv5_server_det_infer.onnx");
