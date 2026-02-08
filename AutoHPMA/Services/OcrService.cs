@@ -18,7 +18,7 @@ public class OcrService : IOcrService
 
     public OcrEngineType CurrentEngine => _settings.SelectedOCR?.ToLowerInvariant() switch
     {
-        "tesseract" => OcrEngineType.Tesseract,
+        "tesseractocr" => OcrEngineType.TesseractOCR,
         "windowsocr" => OcrEngineType.WindowsOCR,
         "rapidocr" => OcrEngineType.RapidOCR,
         _ => OcrEngineType.PaddleOCR
@@ -29,7 +29,7 @@ public class OcrService : IOcrService
         return CurrentEngine switch
         {
             OcrEngineType.PaddleOCR => PaddleOCRHelper.Instance.Ocr(mat),
-            OcrEngineType.Tesseract => TesseractOCRHelper.Instance.Ocr(mat),
+            OcrEngineType.TesseractOCR => TesseractOCRHelper.Instance.Ocr(mat),
             OcrEngineType.WindowsOCR => WindowsOCRHelper.Instance.Ocr(mat),
             OcrEngineType.RapidOCR => RapidOCRHelper.Instance.Ocr(mat),
             _ => throw new NotSupportedException($"不支持的 OCR 引擎: {CurrentEngine}")

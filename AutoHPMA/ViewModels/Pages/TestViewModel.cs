@@ -67,7 +67,7 @@ namespace AutoHPMA.ViewModels.Pages
         [ObservableProperty]
         private bool _hideWindowOnScreenshot = false;
 
-        public ObservableCollection<string> OCRs { get; } = new() { "PaddleOCR", "Tesseract", "WindowsOCR", "RapidOCR" };
+        public ObservableCollection<string> OCRs { get; } = new() { "PaddleOCR", "WindowsOCR", "RapidOCR", "TesseractOCR" };
 
         // 模板匹配
         [ObservableProperty]
@@ -725,7 +725,7 @@ namespace AutoHPMA.ViewModels.Pages
             return SelectedOCR switch
             {
                 "PaddleOCR" => PaddleOCRHelper.Instance.Ocr(mat),
-                "Tesseract" => TesseractOCRHelper.Instance.Ocr(mat),
+                "TesseractOCR" => TesseractOCRHelper.Instance.Ocr(mat),
                 "WindowsOCR" => WindowsOCRHelper.Instance.Ocr(mat),
                 "RapidOCR" => RapidOCRHelper.Instance.Ocr(mat),
                 _ => string.Empty

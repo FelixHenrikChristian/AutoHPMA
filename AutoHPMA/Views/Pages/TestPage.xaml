@@ -836,7 +836,7 @@
                                         Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                                         TextWrapping="Wrap"
                                         FontSize="12"
-                                        Text="• PaddleOCR 对中文识别效果更好，Tesseract 识别速度更快" />
+                                        Text="• 识别效果：PaddleOCR > WindowsOCR > RapidOCR > TesseractOCR" />
                                 </StackPanel>
                             </Border>
                     </StackPanel>
