@@ -62,19 +62,19 @@ public sealed class BitBltCapture : IScreenCapture
                 return null;
 
             var hdcSrc = GetWindowDC(hwnd);
-            if (hdcSrc.Value == nint.Zero)
+            if (hdcSrc.IsNull)
                 return null;
 
             try
             {
                 var hdcDest = CreateCompatibleDC(hdcSrc);
-                if (hdcDest.Value == nint.Zero)
+                if (hdcDest.IsNull)
                     return null;
 
                 try
                 {
                     var hBitmap = CreateCompatibleBitmap(hdcSrc, width, height);
-                    if (hBitmap.Value == nint.Zero)
+                    if (hBitmap.IsNull)
                         return null;
 
                     try
