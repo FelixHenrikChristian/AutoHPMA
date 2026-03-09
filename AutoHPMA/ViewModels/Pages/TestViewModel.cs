@@ -808,9 +808,9 @@ namespace AutoHPMA.ViewModels.Pages
             {
                 var mask = MatchTemplateHelper.GenerateMask(templateMat);
                 // 可选：保存生成的 mask 用于调试
-                string maskPath = Path.ChangeExtension(TemplateImagePath, null) + "_mask.png";
-                mask.SaveImage(maskPath);
-                return mask;
+                //string maskPath = Path.ChangeExtension(TemplateImagePath, null) + "_mask.png";
+                //mask.SaveImage(maskPath);
+                //return mask;
             }
 
             return null;

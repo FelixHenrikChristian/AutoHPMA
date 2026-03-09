@@ -22,11 +22,14 @@ namespace AutoHPMA.GameTask
     /// </summary>
     public class MatchOptions
     {
-        /// <summary>自定义遮罩（可选）</summary>
+        /// <summary>模板遮罩（可选）。作用于模板图像。</summary>
         public Mat? Mask { get; set; }
 
         /// <summary>是否使用模板的 Alpha 通道生成遮罩</summary>
         public bool UseAlphaMask { get; set; } = false;
+
+        /// <summary>源图区域遮罩（可选）。作用于源图：仅当模板完全落在遮罩非零像素区域内时才参与匹配，支持不规则形状；尺寸与源图不一致时会自动缩放。</summary>
+        public Mat? SourceMask { get; set; }
 
         /// <summary>是否查找多个匹配</summary>
         public bool FindMultiple { get; set; } = false;
@@ -287,61 +290,77 @@ namespace AutoHPMA.GameTask
         {
             options ??= new MatchOptions();
 
-            // 处理模板和遮罩
-            Mat templateBGR;
-            Mat? mask = options.Mask;
-
-            if (template.Channels() == 4)
+            // 源图区域遮罩：仅在不规则非零像素区域内匹配（侵蚀后得到与 result 同尺寸的 ROI 遮罩）
+            Mat? resultRoiMask = null;
+            if (options.SourceMask != null)
             {
-                // 4通道模板（带透明通道）
-                if (options.UseAlphaMask && mask == null)
+                try
                 {
-                    mask = MatchTemplateHelper.GenerateMask(template);
+                    resultRoiMask = MatchTemplateHelper.BuildResultRoiMaskFromSourceMask(
+                        options.SourceMask, source.Width, source.Height, template.Width, template.Height);
                 }
-                templateBGR = new Mat();
-                Cv2.CvtColor(template, templateBGR, ColorConversionCodes.BGRA2BGR);
-            }
-            else
-            {
-                templateBGR = template;
-            }
-
-            // 执行匹配
-            if (options.FindMultiple)
-            {
-                // 多重匹配
-                var rects = MatchTemplateHelper.MatchOnePicForOnePic(
-                    source, templateBGR, options.MatchMode, mask, options.Threshold);
-
-                if (rects.Count == 0) return MatchResult.Failed;
-
-                return new MatchResult
+                catch
                 {
-                    Success = true,
-                    Location = new Point(rects[0].X, rects[0].Y),
-                    Rects = rects.Select(r => ScaleRect(r, scale)).ToList(),
-                    RectsUnscaled = rects,
-                    TemplateSize = new Size(template.Width, template.Height)
-                };
+                    resultRoiMask?.Dispose();
+                    resultRoiMask = null;
+                }
             }
-            else
+
+            try
             {
-                // 单个匹配
-                var matchPoint = MatchTemplateHelper.MatchTemplate(
-                    source, templateBGR, options.MatchMode, mask, options.Threshold);
+                Mat templateBGR;
+                Mat? mask = options.Mask;
 
-                if (matchPoint == default) return MatchResult.Failed;
-
-                var unscaledRect = new Rect(matchPoint.X, matchPoint.Y, template.Width, template.Height);
-
-                return new MatchResult
+                if (template.Channels() == 4)
                 {
-                    Success = true,
-                    Location = matchPoint,
-                    Rects = new List<Rect> { ScaleRect(unscaledRect, scale) },
-                    RectsUnscaled = new List<Rect> { unscaledRect },
-                    TemplateSize = new Size(template.Width, template.Height)
-                };
+                    if (options.UseAlphaMask && mask == null)
+                        mask = MatchTemplateHelper.GenerateMask(template);
+                    templateBGR = new Mat();
+                    Cv2.CvtColor(template, templateBGR, ColorConversionCodes.BGRA2BGR);
+                }
+                else
+                {
+                    templateBGR = template;
+                }
+
+                if (options.FindMultiple)
+                {
+                    var rects = MatchTemplateHelper.MatchOnePicForOnePic(
+                        source, templateBGR, options.MatchMode, mask, options.Threshold, maxCount: -1, resultRoiMask);
+
+                    if (rects.Count == 0) return MatchResult.Failed;
+
+                    return new MatchResult
+                    {
+                        Success = true,
+                        Location = new Point(rects[0].X, rects[0].Y),
+                        Rects = rects.Select(rr => ScaleRect(rr, scale)).ToList(),
+                        RectsUnscaled = rects,
+                        TemplateSize = new Size(template.Width, template.Height)
+                    };
+                }
+                else
+                {
+                    var matchPoint = MatchTemplateHelper.MatchTemplate(
+                        source, templateBGR, options.MatchMode, mask, options.Threshold, resultRoiMask);
+
+                    if (matchPoint == default) return MatchResult.Failed;
+
+                    var unscaledRect = new Rect(matchPoint.X, matchPoint.Y, template.Width, template.Height);
+
+                    return new MatchResult
+                    {
+                        Success = true,
+                        Location = matchPoint,
+                        Rects = new List<Rect> { ScaleRect(unscaledRect, scale) },
+                        RectsUnscaled = new List<Rect> { unscaledRect },
+                        TemplateSize = new Size(template.Width, template.Height)
+                    };
+                }
+            }
+            finally
+            {
+                resultRoiMask?.Dispose();
             }
         }
 

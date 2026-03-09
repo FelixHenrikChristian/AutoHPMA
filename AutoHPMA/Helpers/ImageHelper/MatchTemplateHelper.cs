@@ -1,4 +1,4 @@
-﻿using OpenCvSharp;
+using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Point = OpenCvSharp.Point;
 using Rect = OpenCvSharp.Rect;
+using Size = OpenCvSharp.Size;
 
 namespace AutoHPMA.Helpers.ImageHelper
 {
@@ -14,7 +15,8 @@ namespace AutoHPMA.Helpers.ImageHelper
     /// </summary>
     public class MatchTemplateHelper
     {
-        public static Point MatchTemplate(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat = null, double threshold = 0.8)
+        /// <param name="resultRoiMask">可选。与 result 同尺寸的 ROI 遮罩，仅在此遮罩非零位置取极值；用于源图区域限制（如 SourceMask）。</param>
+        public static Point MatchTemplate(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat = null, double threshold = 0.8, Mat? resultRoiMask = null)
         {
             try
             {
@@ -26,7 +28,12 @@ namespace AutoHPMA.Helpers.ImageHelper
                     Cv2.Normalize(result, result, 0, 1, NormTypes.MinMax);
                 }
 
-                Cv2.MinMaxLoc(result, out var minValue, out var maxValue, out var minLoc, out var maxLoc);
+                double minValue, maxValue;
+                Point minLoc, maxLoc;
+                if (resultRoiMask != null && !resultRoiMask.Empty())
+                    Cv2.MinMaxLoc(result, out minValue, out maxValue, out minLoc, out maxLoc, resultRoiMask);
+                else
+                    Cv2.MinMaxLoc(result, out minValue, out maxValue, out minLoc, out maxLoc);
 
                 if (matchMode is TemplateMatchModes.SqDiff or TemplateMatchModes.SqDiffNormed)
                 {
@@ -87,7 +94,7 @@ namespace AutoHPMA.Helpers.ImageHelper
             }
         }
 
-        public static List<Rect> MatchOnePicForOnePic(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat, double threshold, int maxCount = -1)
+        public static List<Rect> MatchOnePicForOnePic(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat, double threshold, int maxCount = -1, Mat? resultRoiMask = null)
         {
             List<Rect> list = [];
 
@@ -96,16 +103,17 @@ namespace AutoHPMA.Helpers.ImageHelper
                 maxCount = srcMat.Width * srcMat.Height / dstMat.Width / dstMat.Height;
             }
 
-            // 克隆源图像，避免修改原图
             using var workMat = srcMat.Clone();
+            using var roiMask = resultRoiMask != null ? resultRoiMask.Clone() : null;
 
             for (int i = 0; i < maxCount; i++)
             {
-                var point = MatchTemplate(workMat, dstMat, matchMode, maskMat, threshold);
+                var point = MatchTemplate(workMat, dstMat, matchMode, maskMat, threshold, roiMask);
                 if (point != new Point())
                 {
-                    // 在工作副本上遮罩已匹配区域
                     Cv2.Rectangle(workMat, point, new Point(point.X + dstMat.Width, point.Y + dstMat.Height), Scalar.Black, -1);
+                    if (roiMask != null)
+                        Cv2.Rectangle(roiMask, point, new Point(point.X + dstMat.Width, point.Y + dstMat.Height), Scalar.Black, -1);
                     list.Add(new Rect(point.X, point.Y, dstMat.Width, dstMat.Height));
                 }
                 else
@@ -115,6 +123,52 @@ namespace AutoHPMA.Helpers.ImageHelper
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// 根据源图遮罩和模板尺寸生成与 MatchTemplate 结果图同尺寸的 ROI 遮罩：仅当模板左上角落在 (x,y) 时，
+        /// 模板覆盖区域完全在 sourceMask 非零像素内，该 (x,y) 在结果图中才为 255，否则为 0。用于仅在不规则遮罩区域内匹配。
+        /// </summary>
+        /// <param name="sourceMask">与源图同尺寸的遮罩（非零表示可匹配区域）</param>
+        /// <param name="sourceWidth">源图宽度</param>
+        /// <param name="sourceHeight">源图高度</param>
+        /// <param name="templateWidth">模板宽度</param>
+        /// <param name="templateHeight">模板高度</param>
+        /// <returns>与 result 同尺寸的 8UC1 遮罩，调用方负责释放</returns>
+        public static Mat BuildResultRoiMaskFromSourceMask(Mat sourceMask, int sourceWidth, int sourceHeight, int templateWidth, int templateHeight)
+        {
+            Mat mask = sourceMask;
+            bool needDisposeMask = false;
+            if (sourceMask.Width != sourceWidth || sourceMask.Height != sourceHeight)
+            {
+                mask = new Mat();
+                Cv2.Resize(sourceMask, mask, new Size(sourceWidth, sourceHeight));
+                needDisposeMask = true;
+            }
+            try
+            {
+                // 侵蚀：仅当以 (x,y) 为左上角、大小为 (tw,th) 的矩形内全为非零时，该位置才可参与匹配
+                using var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(templateWidth, templateHeight));
+                using var eroded = new Mat();
+                Cv2.Erode(mask, eroded, kernel);
+
+                int rw = sourceWidth - templateWidth + 1;
+                int rh = sourceHeight - templateHeight + 1;
+                if (rw <= 0 || rh <= 0)
+                    return new Mat();
+
+                var resultRoi = new Mat(rh, rw, MatType.CV_8UC1);
+                int th2 = templateHeight / 2, tw2 = templateWidth / 2;
+                for (int y = 0; y < rh; y++)
+                for (int x = 0; x < rw; x++)
+                    resultRoi.Set(y, x, eroded.At<byte>(y + th2, x + tw2));
+                return resultRoi;
+            }
+            finally
+            {
+                if (needDisposeMask)
+                    mask?.Dispose();
+            }
         }
 
         /// <summary>

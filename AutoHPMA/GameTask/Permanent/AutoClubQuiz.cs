@@ -1,4 +1,4 @@
-﻿using AutoHPMA.Helpers;
+using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.DataHelper;
 using AutoHPMA.Helpers.ImageHelper;
@@ -259,7 +259,7 @@ public class AutoClubQuiz : BaseGameTask
 
     private async Task HandleEventsState()
     {
-        var enterResult = Find(GetImage("badge_enter"), new MatchOptions { Mask = GetImage("badge_enter_mask") });
+        var enterResult = Find(GetImage("badge_enter"), new MatchOptions { SourceMask = GetImage("badge_enter_mask") });
         if (!enterResult.Success)
         {
             await SendESCAsync();
