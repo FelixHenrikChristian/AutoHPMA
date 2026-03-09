@@ -142,6 +142,15 @@ namespace AutoHPMA.ViewModels.Pages
         {
             if (_gameHwnd == IntPtr.Zero) return;
 
+            // 检测游戏窗口是否仍然有效，游戏退出时自动停止
+            if (!NativeMethodsService.IsWindow(_gameHwnd))
+            {
+                _logger.LogWarning("检测到游戏窗口已关闭，自动停止所有任务和截图器。");
+                StopAutoHPMA();
+                SnackbarHelper.ShowWarning("游戏已退出", "检测到游戏已退出，已自动停止所有任务。");
+                return;
+            }
+
             bool shouldHide = NativeMethodsService.IsIconic(_gameHwnd) ||
                              NativeMethodsService.GetForegroundWindow() != _displayHwnd;
 
@@ -159,8 +168,8 @@ namespace AutoHPMA.ViewModels.Pages
                 _logWindow?.BringToFront();
             }
 
-            _logWindow?.RefreshPosition(_gameHwnd);
-            _maskWindow?.RefreshPosition(_displayHwnd);
+                _logWindow?.RefreshPosition(_gameHwnd);
+                _maskWindow?.RefreshPosition(_displayHwnd);
         }
 
         #endregion
@@ -263,7 +272,7 @@ namespace AutoHPMA.ViewModels.Pages
 
             _capture?.Stop();
             _capture = null;
-            
+
             GC.Collect();
         }
 
