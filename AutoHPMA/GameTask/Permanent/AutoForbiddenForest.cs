@@ -72,11 +72,11 @@ public class AutoForbiddenForest : BaseGameTask
         _images["fight_auto"] = Cv2.ImRead(imageFolder + "fight_auto.png", ImreadModes.Unchanged);
     }
 
-    public override async void Start()
+    public override void Start()
     {
         _state = AutoForbiddenForestState.Unknown;
         StartStateMonitor(_stateRules, OnStateDetected, AutoForbiddenForestState.Unknown, "禁林-未知状态");
-        await RunTaskAsync("禁林");
+        SafeFireAndForget(RunTaskAsync("禁林"));
     }
 
     private void OnStateDetected(AutoForbiddenForestState newState)

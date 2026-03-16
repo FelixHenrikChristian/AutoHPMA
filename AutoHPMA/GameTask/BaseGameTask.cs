@@ -630,6 +630,28 @@ namespace AutoHPMA.GameTask
         }
 
         /// <summary>
+        /// 安全地启动异步任务（fire-and-forget），避免 async void 导致的异常丢失
+        /// </summary>
+        protected void SafeFireAndForget(Task task)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 任务取消，正常流程
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "任务执行异常：{Message}", ex.Message);
+                }
+            });
+        }
+
+        /// <summary>
         /// 运行任务的模板方法，统一处理任务生命周期
         /// </summary>
         /// <param name="taskName">任务名称（用于日志显示）</param>
@@ -644,7 +666,6 @@ namespace AutoHPMA.GameTask
                 {
                     try
                     {
-                        GC.Collect();
                         await ExecuteLoopAsync();
                     }
                     catch (OperationCanceledException) when (!_cts.Token.IsCancellationRequested)

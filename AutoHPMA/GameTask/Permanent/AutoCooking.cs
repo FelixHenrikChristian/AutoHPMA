@@ -109,11 +109,11 @@ public class AutoCooking : BaseGameTask
         };
     }
 
-    public override async void Start()
+    public override void Start()
     {
         _state = AutoCookingState.Unknown;
         StartStateMonitor(_stateRules, OnStateDetected, AutoCookingState.Unknown, "烹饪-未知状态");
-        await RunTaskAsync("自动烹饪");
+        SafeFireAndForget(RunTaskAsync("自动烹饪"));
     }
 
     private void OnStateDetected(AutoCookingState newState)

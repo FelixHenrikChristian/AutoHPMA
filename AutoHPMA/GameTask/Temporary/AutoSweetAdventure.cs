@@ -57,11 +57,11 @@ public class AutoSweetAdventure : BaseGameTask
         LoadImagesFromDirectory("Assets/Tasks/SweetAdventure/Image/");
     }
 
-    public override async void Start()
+    public override void Start()
     {
         _state = AutoSweetAdventureState.Unknown;
         StartStateMonitor(_stateRules, OnStateDetected, AutoSweetAdventureState.Unknown, "甜蜜冒险-未知状态");
-        await RunTaskAsync("甜蜜冒险");
+        SafeFireAndForget(RunTaskAsync("甜蜜冒险"));
     }
 
     private void OnStateDetected(AutoSweetAdventureState newState)

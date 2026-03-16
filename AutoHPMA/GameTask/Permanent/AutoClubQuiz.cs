@@ -99,11 +99,11 @@ public class AutoClubQuiz : BaseGameTask
         LoadImagesFromDirectory("Assets/Tasks/ClubQuiz/Image/");
     }
 
-    public override async void Start()
+    public override void Start()
     {
         _state = AutoClubQuizState.Unknown;
         StartStateMonitor(_stateRules, OnStateDetected, AutoClubQuizState.Unknown, "社团答题-未进入场景");
-        await RunTaskAsync("社团答题");
+        SafeFireAndForget(RunTaskAsync("社团答题"));
     }
 
     private void OnStateDetected(AutoClubQuizState newState)
