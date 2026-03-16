@@ -234,9 +234,9 @@ namespace AutoHPMA.ViewModels.Pages
         private void StopTask()
         {
             _currentTask?.Stop();
+            _currentTask?.Dispose();
             _currentTask = null;
             CurrentTaskType = TaskType.None;
-            GC.Collect();
         }
 
         /// <summary>

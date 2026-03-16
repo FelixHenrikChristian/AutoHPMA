@@ -6,7 +6,7 @@ namespace AutoHPMA.GameTask;
 /// <summary>
 /// 游戏任务接口，定义了所有游戏任务的基本行为
 /// </summary>
-public interface IGameTask
+public interface IGameTask : IDisposable
 {
     /// <summary>
     /// 启动任务

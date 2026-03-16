@@ -769,4 +769,33 @@ public class AutoCooking : BaseGameTask
     }
 
     #endregion
+
+    #region IDisposable
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // 释放独立的 Mat 字段
+            bin?.Dispose();
+            board?.Dispose();
+            order?.Dispose();
+            red_order?.Dispose();
+
+            // 释放字典中的 Mat
+            foreach (var mat in kitchenwares.Values) mat?.Dispose();
+            kitchenwares.Clear();
+            foreach (var mat in kitchenwareRings.Values) mat?.Dispose();
+            kitchenwareRings.Clear();
+            foreach (var mat in ingredients.Values) mat?.Dispose();
+            ingredients.Clear();
+            foreach (var mat in condiments.Values) mat?.Dispose();
+            condiments.Clear();
+            foreach (var mat in dishImages.Values) mat?.Dispose();
+            dishImages.Clear();
+        }
+        base.Dispose(disposing);
+    }
+
+    #endregion
 }

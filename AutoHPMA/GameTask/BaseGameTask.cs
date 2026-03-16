@@ -95,6 +95,7 @@ namespace AutoHPMA.GameTask
         protected CancellationTokenSource _cts;
         protected bool _waited = false;
         protected Dictionary<string, Mat> _images = new();
+        private bool _disposed = false;
 
         // 状态监测任务
         private Task? _stateMonitorTask;
@@ -540,11 +541,13 @@ namespace AutoHPMA.GameTask
             TState defaultState,
             string defaultDisplayName)
         {
+            var captureMat = CaptureAndPreprocess();
+
             foreach (var (templates, state, displayName, threshold) in rules)
             {
                 foreach (var template in templates)
                 {
-                    var result = Find(template, new MatchOptions { Threshold = threshold });
+                    var result = FindInSource(captureMat, template, new MatchOptions { Threshold = threshold });
                     if (result.Success)
                     {
                         // 显示状态标识检测框（绿色，持续显示直到状态改变）
@@ -737,6 +740,39 @@ namespace AutoHPMA.GameTask
                 _logger.LogWarning("参数 {Key} 类型转换失败", key);
                 return false;
             }
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// 释放托管和非托管资源
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                // 释放 _images 中的所有 Mat
+                foreach (var mat in _images.Values)
+                    mat?.Dispose();
+                _images.Clear();
+
+                // 释放取消令牌
+                try { _operationCts?.Dispose(); } catch { }
+                try { _cts?.Dispose(); } catch { }
+            }
+            _disposed = true;
         }
 
         #endregion
