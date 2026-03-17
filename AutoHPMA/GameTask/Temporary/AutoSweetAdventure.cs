@@ -1,4 +1,5 @@
-﻿using AutoHPMA.Helpers.CaptureHelper;
+using AutoHPMA.GameTask.Model;
+using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Services;
 using AutoHPMA.Views.Windows;
@@ -19,14 +20,14 @@ public enum AutoSweetAdventureState
     Unknown,
     Teaming,
     Gaming,
-    Endding,
+    Ending,
 }
 
 public class AutoSweetAdventure : BaseGameTask
 {
     private volatile AutoSweetAdventureState _state = AutoSweetAdventureState.Unknown;
 
-    private int round = 0, prev_round = 0, step = 1;
+    private int _round = 0, _prevRound = 0, _step = 1;
     private int _maxStep = 12;
 
     // 状态检测规则
@@ -36,7 +37,7 @@ public class AutoSweetAdventure : BaseGameTask
         : base(logger, displayHwnd, gameHwnd)
     {
         LoadAssets();
-        CalOffset();
+        CalculateOffset();
         InitStateRules();
     }
 
@@ -48,7 +49,7 @@ public class AutoSweetAdventure : BaseGameTask
         {
             new(new[] { GetImage("ui_teaming") }, AutoSweetAdventureState.Teaming, "甜蜜冒险-组队中"),
             new(new[] { GetImage("ui_gaming") }, AutoSweetAdventureState.Gaming, "甜蜜冒险-游戏中"),
-            new(new[] { GetImage("ui_endding") }, AutoSweetAdventureState.Endding, "甜蜜冒险-结算中"),
+            new(new[] { GetImage("ui_endding") }, AutoSweetAdventureState.Ending, "甜蜜冒险-结算中"),
         };
     }
 
@@ -68,7 +69,7 @@ public class AutoSweetAdventure : BaseGameTask
     {
         _state = newState;
         if (newState != AutoSweetAdventureState.Unknown)
-            _waited = false;
+            _hasWaitedForInitialState = false;
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -77,13 +78,13 @@ public class AutoSweetAdventure : BaseGameTask
         switch (_state)
         {
             case AutoSweetAdventureState.Unknown:
-                if (!_waited)
+                if (!_hasWaitedForInitialState)
                 {
                     await Task.Delay(5000, _cts.Token);
-                    _waited = true;
+                    _hasWaitedForInitialState = true;
                     return;
                 }
-                _waited = false;
+                _hasWaitedForInitialState = false;
                 await Task.Delay(1000, _cts.Token);
                 break;
 
@@ -98,21 +99,21 @@ public class AutoSweetAdventure : BaseGameTask
                 break;
 
             case AutoSweetAdventureState.Gaming:
-                round = FindRound();
-                if (round > prev_round)
+                _round = FindRound();
+                if (_round > _prevRound)
                 {
-                    _logger.LogInformation("当前回合数：[Yellow]{Round}[/Yellow]。", round);
-                    step = 1;
-                    prev_round = round;
+                    _logger.LogInformation("当前回合数：[Yellow]{Round}[/Yellow]。", _round);
+                    _step = 1;
+                    _prevRound = _round;
                 }
-                if (step < _maxStep)
+                if (_step < _maxStep)
                 {
                     var forwardResult = Find(GetImage("gaming_forward"), new MatchOptions { Threshold = 0.96 });
                     if (forwardResult.Success)
                     {
                         await ClickMatchCenterAsync(forwardResult);
-                        step++;
-                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：前进。", step);
+                        _step++;
+                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：前进。", _step);
                         await Task.Delay(1000, _cts.Token);
                         return;
                     }
@@ -121,8 +122,8 @@ public class AutoSweetAdventure : BaseGameTask
                     if (candyResult.Success)
                     {
                         await ClickMatchCenterAsync(candyResult);
-                        step++;
-                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：预测糖果。", step);
+                        _step++;
+                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：预测糖果。", _step);
                         await Task.Delay(1000, _cts.Token);
                         return;
                     }
@@ -133,8 +134,8 @@ public class AutoSweetAdventure : BaseGameTask
                     if (returnResult.Success)
                     {
                         await ClickMatchCenterAsync(returnResult);
-                        step++;
-                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：返回。", step);
+                        _step++;
+                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：返回。", _step);
                         await Task.Delay(1000, _cts.Token);
                         return;
                     }
@@ -143,8 +144,8 @@ public class AutoSweetAdventure : BaseGameTask
                     if (monsterResult.Success)
                     {
                         await ClickMatchCenterAsync(monsterResult);
-                        step++;
-                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：预测怪物。", step);
+                        _step++;
+                        _logger.LogInformation("第[Yellow]{Step}[/Yellow]步：预测怪物。", _step);
                         await Task.Delay(1000, _cts.Token);
                         return;
                     }
@@ -152,11 +153,11 @@ public class AutoSweetAdventure : BaseGameTask
                 await Task.Delay(1000, _cts.Token);
                 break;
 
-            case AutoSweetAdventureState.Endding:
+            case AutoSweetAdventureState.Ending:
                 ClearStateRects();
-                round = 0;
-                prev_round = 0;
-                step = 1;
+                _round = 0;
+                _prevRound = 0;
+                _step = 1;
                 _logger.LogInformation("游戏结束，正在结算中...");
                 await SendSpaceAsync();
                 await Task.Delay(2000, _cts.Token);

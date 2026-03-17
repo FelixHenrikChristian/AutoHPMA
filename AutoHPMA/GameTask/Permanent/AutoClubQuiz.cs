@@ -1,3 +1,4 @@
+using AutoHPMA.GameTask.Model;
 using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.DataHelper;
@@ -42,21 +43,21 @@ public class AutoClubQuiz : BaseGameTask
     private volatile AutoClubQuizState _state = AutoClubQuizState.Unknown;
 
     // 状态字段
-    private string? excelPath;
-    private char bestOption;
-    private string? q, a, b, c, d, answer, i;
+    private string? _excelPath;
+    private char _bestOption;
+    private string? _question, _optionA, _optionB, _optionC, _optionD, _answer, _indexText;
     private bool _optionLocated = false, _questionLocated = false;
-    private bool _quiz_over = true;
+    private bool _quizOver = true;
     private Dictionary<char, Rect> optionRects = new();
-    private Rect question_rect;
-    private Rect index_rect;
-    private int detect_gap = 200;
+    private Rect _questionRect;
+    private Rect _indexRect;
+    private int _detectGap = 200;
     private enum GatherRefreshMode { ChatBox, Badge }
     private GatherRefreshMode _gatherRefreshMode = GatherRefreshMode.Badge;
     private int _answerDelay = 0;
     private bool _joinOthers = true;
     private bool _stopWhenContributionFull = false;
-    private int roundIndex = 1;
+    private int _roundIndex = 1;
 
     // OCR 服务
     private readonly IOcrService _ocrService;
@@ -70,10 +71,10 @@ public class AutoClubQuiz : BaseGameTask
         : base(logger, displayHwnd, gameHwnd)
     {
         _ocrService = ocrService;
-        excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/ClubQuiz", "club_question_bank.xlsx");
-        excelHelper = new ExcelHelper(excelPath);
+        _excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/ClubQuiz", "club_question_bank.xlsx");
+        excelHelper = new ExcelHelper(_excelPath);
         LoadAssets();
-        CalOffset();
+        CalculateOffset();
         InitStateRules();
     }
 
@@ -110,7 +111,7 @@ public class AutoClubQuiz : BaseGameTask
     {
         _state = newState;
         if (newState != AutoClubQuizState.Unknown)
-            _waited = false;
+            _hasWaitedForInitialState = false;
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -161,15 +162,15 @@ public class AutoClubQuiz : BaseGameTask
 
     private async Task HandleUnknownState()
     {
-        if (!_waited)
+        if (!_hasWaitedForInitialState)
         {
             _logWindow?.SetGameState("社团答题-等待加载");
             await Task.Delay(3000, _cts.Token);
-            _waited = true;
+            _hasWaitedForInitialState = true;
             return;
         }
         // 已等待过，执行操作进入地图
-        _waited = false;
+        _hasWaitedForInitialState = false;
         await SendESCAsync();
         await Task.Delay(2000, _cts.Token);
         await WindowInteractionHelper.SendKeyAsync(_gameHwnd, 0x4D); // M键打开地图
@@ -274,10 +275,10 @@ public class AutoClubQuiz : BaseGameTask
     private async Task HandleQuizState()
     {
         
-        if (_quiz_over)
+        if (_quizOver)
         {
-            _logger.LogInformation("第[Yellow]{roundIndex}[/Yellow]轮答题开始", roundIndex);
-            _quiz_over = false;
+            _logger.LogInformation("第[Yellow]{roundIndex}[/Yellow]轮答题开始", _roundIndex);
+            _quizOver = false;
         }
         
         if (!_optionLocated && !LocateOptions())
@@ -303,7 +304,7 @@ public class AutoClubQuiz : BaseGameTask
             return;
         }
 
-        await Task.Delay(detect_gap, _cts.Token);
+        await Task.Delay(_detectGap, _cts.Token);
     }
 
     private async Task HandleOverState()
@@ -317,8 +318,8 @@ public class AutoClubQuiz : BaseGameTask
     private async Task HandleVictoryState()
     {
         await Task.Delay(1000, _cts.Token);
-        roundIndex++;
-        _quiz_over = true;
+        _roundIndex++;
+        _quizOver = true;
         FindScore();
         await SendESCAsync();
         await Task.Delay(1000, _cts.Token);
@@ -331,13 +332,13 @@ public class AutoClubQuiz : BaseGameTask
     private async Task AcquireAnswerAsync()
     {
         await Task.Run(() => RecogniseText());
-        q = TextMatchHelper.FilterChineseAndPunctuation(q);
+        _question = TextMatchHelper.FilterChineseAndPunctuation(_question);
         PrintText();
-        answer = excelHelper.GetBestMatchingAnswer(q);
-        bestOption = TextMatchHelper.FindBestOption(answer, a, b, c, d);
+        _answer = excelHelper.GetBestMatchingAnswer(_question);
+        _bestOption = TextMatchHelper.FindBestOption(_answer, _optionA, _optionB, _optionC, _optionD);
         await Task.Delay(_answerDelay, _cts.Token);
-        i = Regex.Match(i, @"\d+/\d+").Value;
-        _logger.LogInformation("进度：[Yellow]{i}[/Yellow]。答案：[Lime]{bestOption}[/Lime]。", i, bestOption);
+        _indexText = Regex.Match(_indexText, @"\d+/\d+").Value;
+        _logger.LogInformation("进度：[Yellow]{i}[/Yellow]。答案：[Lime]{bestOption}[/Lime]。", _indexText, _bestOption);
         await ClickOptionAsync();
     }
 
@@ -370,7 +371,7 @@ public class AutoClubQuiz : BaseGameTask
         }
 
         // 显示定位结果
-        var scaledRects = optionRects.Values.Select(r => ScaleRect(r, scale)).ToList();
+        var scaledRects = optionRects.Values.Select(r => ScaleRect(r, _scale)).ToList();
         SetStateRects(scaledRects);
 
         _optionLocated = true;
@@ -384,15 +385,15 @@ public class AutoClubQuiz : BaseGameTask
     {
         var captureMat = CaptureAndPreprocess();
         Mat captureMat_binary = ContourDetectHelper.Binarize(captureMat, 200);
-        question_rect = ContourDetectHelper.DetectApproxRectangle(captureMat_binary);
+        _questionRect = ContourDetectHelper.DetectApproxRectangle(captureMat_binary);
         
-        if (question_rect == default)
+        if (_questionRect == default)
             return false;
 
         _questionLocated = true;
         // 将问题框也加入状态检测框
-        var allRects = optionRects.Values.Select(r => ScaleRect(r, scale)).ToList();
-        allRects.Add(ScaleRect(question_rect, scale));
+        var allRects = optionRects.Values.Select(r => ScaleRect(r, _scale)).ToList();
+        allRects.Add(ScaleRect(_questionRect, _scale));
         SetStateRects(allRects);
         return true;
     }
@@ -401,26 +402,26 @@ public class AutoClubQuiz : BaseGameTask
     {
         var captureMat = CaptureAndPreprocess();
 
-        q = _ocrService.Recognize(new Mat(captureMat, question_rect));
-        a = _ocrService.Recognize(new Mat(captureMat, optionRects['A']));
-        b = _ocrService.Recognize(new Mat(captureMat, optionRects['B']));
-        c = _ocrService.Recognize(new Mat(captureMat, optionRects['C']));
-        d = _ocrService.Recognize(new Mat(captureMat, optionRects['D']));
-        i = _ocrService.Recognize(new Mat(captureMat, index_rect));
+        _question = _ocrService.Recognize(new Mat(captureMat, _questionRect));
+        _optionA = _ocrService.Recognize(new Mat(captureMat, optionRects['A']));
+        _optionB = _ocrService.Recognize(new Mat(captureMat, optionRects['B']));
+        _optionC = _ocrService.Recognize(new Mat(captureMat, optionRects['C']));
+        _optionD = _ocrService.Recognize(new Mat(captureMat, optionRects['D']));
+        _indexText = _ocrService.Recognize(new Mat(captureMat, _indexRect));
     }
 
     private void PrintText()
     {
-        _logger.LogDebug("问题：{q}", q);
-        _logger.LogDebug("选项A：{a}", a);
-        _logger.LogDebug("选项B：{b}", b);
-        _logger.LogDebug("选项C：{c}", c);
-        _logger.LogDebug("选项D：{d}", d);
+        _logger.LogDebug("问题：{q}", _question);
+        _logger.LogDebug("选项A：{a}", _optionA);
+        _logger.LogDebug("选项B：{b}", _optionB);
+        _logger.LogDebug("选项C：{c}", _optionC);
+        _logger.LogDebug("选项D：{d}", _optionD);
     }
 
     private async Task ClickOptionAsync()
     {
-        var targetRect = optionRects.GetValueOrDefault(bestOption, optionRects['A']);
+        var targetRect = optionRects.GetValueOrDefault(_bestOption, optionRects['A']);
         var centerX = targetRect.X + GetImage("quiz_option_mask").Width / 4;
         var centerY = targetRect.Y + GetImage("quiz_option_mask").Height / 2;
         await ClickAsync(new Point(centerX, centerY));
@@ -474,12 +475,12 @@ public class AutoClubQuiz : BaseGameTask
         if (!result.Success) return false;
 
         // 将时间框加入状态检测框
-        var allRects = optionRects.Values.Select(r => ScaleRect(r, scale)).ToList();
-        allRects.Add(ScaleRect(question_rect, scale));
+        var allRects = optionRects.Values.Select(r => ScaleRect(r, _scale)).ToList();
+        allRects.Add(ScaleRect(_questionRect, _scale));
         allRects.AddRange(result.Rects);
         SetStateRects(allRects);
         var time20 = GetImage("quiz_time20");
-        index_rect = new Rect(result.Location.X, result.Location.Y + time20.Height, time20.Width, time20.Height);
+        _indexRect = new Rect(result.Location.X, result.Location.Y + time20.Height, time20.Width, time20.Height);
         return true;
     }
 

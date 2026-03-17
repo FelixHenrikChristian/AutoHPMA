@@ -1,6 +1,7 @@
 using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
+using AutoHPMA.GameTask.Model;
 using AutoHPMA.Services;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
@@ -15,73 +16,6 @@ using Size = OpenCvSharp.Size;
 
 namespace AutoHPMA.GameTask
 {
-    #region 匹配相关类
-
-    /// <summary>
-    /// 模板匹配选项
-    /// </summary>
-    public class MatchOptions
-    {
-        /// <summary>模板遮罩（可选）。作用于模板图像。</summary>
-        public Mat? Mask { get; set; }
-
-        /// <summary>是否使用模板的 Alpha 通道生成遮罩</summary>
-        public bool UseAlphaMask { get; set; } = false;
-
-        /// <summary>源图区域遮罩（可选）。作用于源图：仅当模板完全落在遮罩非零像素区域内时才参与匹配，支持不规则形状；尺寸与源图不一致时会自动缩放。</summary>
-        public Mat? SourceMask { get; set; }
-
-        /// <summary>是否查找多个匹配</summary>
-        public bool FindMultiple { get; set; } = false;
-
-        /// <summary>匹配阈值（默认 0.9）</summary>
-        public double Threshold { get; set; } = 0.9;
-
-        /// <summary>匹配模式</summary>
-        public TemplateMatchModes MatchMode { get; set; } = TemplateMatchModes.CCoeffNormed;
-    }
-
-    /// <summary>
-    /// 模板匹配结果
-    /// </summary>
-    public class MatchResult
-    {
-        /// <summary>是否匹配成功</summary>
-        public bool Success { get; set; }
-
-        /// <summary>匹配位置（单个匹配时的左上角坐标，未缩放）</summary>
-        public Point Location { get; set; }
-
-        /// <summary>匹配区域列表（已缩放，用于显示）</summary>
-        public List<Rect> Rects { get; set; } = new();
-
-        /// <summary>匹配区域列表（未缩放，用于多重匹配点击）</summary>
-        public List<Rect> RectsUnscaled { get; set; } = new();
-
-        /// <summary>模板尺寸（未缩放）</summary>
-        public Size TemplateSize { get; set; }
-
-        /// <summary>静态失败结果</summary>
-        public static MatchResult Failed => new() { Success = false };
-    }
-
-    #endregion
-
-    #region 状态规则
-
-    /// <summary>
-    /// 状态检测规则
-    /// </summary>
-    /// <typeparam name="TState">状态枚举类型</typeparam>
-    public record StateRule<TState>(
-        Mat[] Templates,
-        TState State,
-        string DisplayName,
-        double Threshold = 0.9
-    );
-
-    #endregion
-
     public abstract class BaseGameTask : IGameTask
     {
         protected static LogWindow _logWindow => AppContextService.Instance.LogWindow;
@@ -90,10 +24,10 @@ namespace AutoHPMA.GameTask
 
         protected readonly ILogger _logger;
         protected nint _displayHwnd, _gameHwnd;
-        protected int offsetX, offsetY;
-        protected double scale;
+        protected int _offsetX, _offsetY;
+        protected double _scale;
         protected CancellationTokenSource _cts;
-        protected bool _waited = false;
+        protected bool _hasWaitedForInitialState = false;
         protected Dictionary<string, Mat> _images = new();
         private bool _disposed = false;
 
@@ -115,7 +49,7 @@ namespace AutoHPMA.GameTask
             _gameHwnd = gameHwnd;
             _cts = new CancellationTokenSource();
             InitializeOperationCts();
-            CalOffset();
+            CalculateOffset();
         }
 
         #region 操作取消管理
@@ -144,7 +78,7 @@ namespace AutoHPMA.GameTask
                     _operationCts?.Cancel();
                     _operationCts?.Dispose();
                 }
-                catch { /* 忽略异常 */ }
+                catch (Exception ex) { _logger.LogDebug(ex, "取消操作CTS时异常"); }
 
                 // 创建链接到主 CTS 的新操作 CTS
                 _operationCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
@@ -185,15 +119,15 @@ namespace AutoHPMA.GameTask
         /// <summary>
         /// 计算游戏窗口偏移和缩放比例
         /// </summary>
-        protected void CalOffset()
+        protected void CalculateOffset()
         {
             int left, top, width, height;
             int leftMumu, topMumu;
             WindowInteractionHelper.GetWindowPositionAndSize(_displayHwnd, out leftMumu, out topMumu, out width, out height);
             WindowInteractionHelper.GetWindowPositionAndSize(_gameHwnd, out left, out top, out width, out height);
-            offsetX = left - leftMumu;
-            offsetY = top - topMumu;
-            scale = width / 1280.0;
+            _offsetX = left - leftMumu;
+            _offsetY = top - topMumu;
+            _scale = width / 1280.0;
         }
 
         #endregion
@@ -259,7 +193,7 @@ namespace AutoHPMA.GameTask
         {
             _cts.Token.ThrowIfCancellationRequested();
             var captureMat = _capture.Capture();
-            Cv2.Resize(captureMat, captureMat, new Size(captureMat.Width / scale, captureMat.Height / scale));
+            Cv2.Resize(captureMat, captureMat, new Size(captureMat.Width / _scale, captureMat.Height / _scale));
             Cv2.CvtColor(captureMat, captureMat, ColorConversionCodes.BGRA2BGR);
             return captureMat;
         }
@@ -335,7 +269,7 @@ namespace AutoHPMA.GameTask
                     {
                         Success = true,
                         Location = new Point(rects[0].X, rects[0].Y),
-                        Rects = rects.Select(rr => ScaleRect(rr, scale)).ToList(),
+                        Rects = rects.Select(rr => ScaleRect(rr, _scale)).ToList(),
                         RectsUnscaled = rects,
                         TemplateSize = new Size(template.Width, template.Height)
                     };
@@ -353,7 +287,7 @@ namespace AutoHPMA.GameTask
                     {
                         Success = true,
                         Location = matchPoint,
-                        Rects = new List<Rect> { ScaleRect(unscaledRect, scale) },
+                        Rects = new List<Rect> { ScaleRect(unscaledRect, _scale) },
                         RectsUnscaled = new List<Rect> { unscaledRect },
                         TemplateSize = new Size(template.Width, template.Height)
                     };
@@ -379,8 +313,8 @@ namespace AutoHPMA.GameTask
             token.ThrowIfCancellationRequested();
             await WindowInteractionHelper.SendMouseClickAsync(
                 _gameHwnd,
-                (uint)(location.X * scale - offsetX),
-                (uint)(location.Y * scale - offsetY),
+                (uint)(location.X * _scale - _offsetX),
+                (uint)(location.Y * _scale - _offsetY),
                 token
             );
         }
@@ -445,10 +379,10 @@ namespace AutoHPMA.GameTask
             token.ThrowIfCancellationRequested();
             await WindowInteractionHelper.SendMouseDragWithNoiseAsync(
                 _gameHwnd,
-                (uint)(start.X * scale - offsetX),
-                (uint)(start.Y * scale - offsetY),
-                (uint)(end.X * scale - offsetX),
-                (uint)(end.Y * scale - offsetY),
+                (uint)(start.X * _scale - _offsetX),
+                (uint)(start.Y * _scale - _offsetY),
+                (uint)(end.X * _scale - _offsetX),
+                (uint)(end.Y * _scale - _offsetY),
                 duration,
                 token
             );
@@ -693,7 +627,7 @@ namespace AutoHPMA.GameTask
                 _logger.LogInformation("[Aquamarine]---{TaskName}任务已终止---[/Aquamarine]", taskName);
                 _maskWindow?.ClearAll();
                 _logWindow?.SetGameState("空闲");
-                _waited = false;
+                _hasWaitedForInitialState = false;
                 _cts.Dispose();
                 _cts = new CancellationTokenSource();
             }

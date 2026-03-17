@@ -1,3 +1,4 @@
+using AutoHPMA.GameTask.Model;
 using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
@@ -37,7 +38,7 @@ public class AutoForbiddenForest : BaseGameTask
     private int _autoForbiddenForestTimes;
     private AutoForbiddenForestOption _autoForbiddenForestOption = AutoForbiddenForestOption.Leader;
 
-    private int round = 0;
+    private int _round = 0;
 
     // 状态检测规则
     private StateRule<AutoForbiddenForestState>[] _stateRules = null!;
@@ -46,7 +47,7 @@ public class AutoForbiddenForest : BaseGameTask
         : base(logger, displayHwnd, gameHwnd)
     {
         LoadAssets();
-        CalOffset();
+        CalculateOffset();
         InitStateRules();
     }
 
@@ -83,14 +84,14 @@ public class AutoForbiddenForest : BaseGameTask
     {
         _state = newState;
         if (newState != AutoForbiddenForestState.Unknown)
-            _waited = false;
+            _hasWaitedForInitialState = false;
     }
 
     protected override async Task ExecuteLoopAsync()
     {
-        if (round >= _autoForbiddenForestTimes)
+        if (_round >= _autoForbiddenForestTimes)
         {
-            ToastNotificationHelper.ShowToast("禁林任务完成", $"已完成 {round} 轮禁林任务。");
+            ToastNotificationHelper.ShowToast("禁林任务完成", $"已完成 {_round} 轮禁林任务。");
             Stop();
             return;
         }
@@ -99,13 +100,13 @@ public class AutoForbiddenForest : BaseGameTask
         switch (_state)
         {
             case AutoForbiddenForestState.Unknown:
-                if (!_waited)
+                if (!_hasWaitedForInitialState)
                 {
                     await Task.Delay(5000, _cts.Token);
-                    _waited = true;
+                    _hasWaitedForInitialState = true;
                     return;
                 }
-                _waited = false;
+                _hasWaitedForInitialState = false;
                 await Task.Delay(1000, _cts.Token);
                 break;
 
@@ -193,7 +194,7 @@ public class AutoForbiddenForest : BaseGameTask
                 
                 await Task.Delay(1500, _cts.Token);
                 await SendSpaceAsync();
-                _logger.LogInformation("第[Yellow]{Round}[/Yellow]/[Yellow]{Total}[/Yellow]次禁林任务完成。", ++round, _autoForbiddenForestTimes);
+                _logger.LogInformation("第[Yellow]{Round}[/Yellow]/[Yellow]{Total}[/Yellow]次禁林任务完成。", ++_round, _autoForbiddenForestTimes);
                 await Task.Delay(2000, _cts.Token);
                 break;
         }

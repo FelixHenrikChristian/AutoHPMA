@@ -1,3 +1,4 @@
+using AutoHPMA.GameTask.Model;
 using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
@@ -94,7 +95,7 @@ public class AutoCooking : BaseGameTask
         _cookingConfigService = cookingConfigService;
         _ocrService = ocrService;
         LoadAssets();
-        CalOffset();
+        CalculateOffset();
         InitStateRules();
     }
 
@@ -132,7 +133,7 @@ public class AutoCooking : BaseGameTask
         }
         _state = newState;
         if (newState != AutoCookingState.Unknown)
-            _waited = false;
+            _hasWaitedForInitialState = false;
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -148,13 +149,13 @@ public class AutoCooking : BaseGameTask
         switch (_state)
         {
             case AutoCookingState.Unknown:
-                if (!_waited)
+                if (!_hasWaitedForInitialState)
                 {
                     await Task.Delay(2000, _cts.Token);
-                    _waited = true;
+                    _hasWaitedForInitialState = true;
                     return;
                 }
-                _waited = false;
+                _hasWaitedForInitialState = false;
                 _logger.LogInformation("状态未知，请手动进入烹饪界面。");
                 await Task.Delay(1000, _cts.Token);
                 break;
@@ -508,8 +509,8 @@ public class AutoCooking : BaseGameTask
 
         // 显示食材和调料
         var allRects = new List<Rect>();
-        allRects.AddRange(_currentDishConfig.RequiredIngredients.Select(i => ScaleRect(ingredientRects[i], scale)));
-        allRects.AddRange(_currentDishConfig.RequiredCondiments.Select(c => ScaleRect(condimentRects[c], scale)));
+        allRects.AddRange(_currentDishConfig.RequiredIngredients.Select(i => ScaleRect(ingredientRects[i], _scale)));
+        allRects.AddRange(_currentDishConfig.RequiredCondiments.Select(c => ScaleRect(condimentRects[c], _scale)));
         SetStateRects(allRects);
 
         completedSteps.Clear();
@@ -545,9 +546,9 @@ public class AutoCooking : BaseGameTask
             {
                 template = getTemplate(item);
             }
-            catch
+            catch (Exception ex)
             {
-                _logger.LogDebug("{Type} {Item} 的图片未加载", itemType, item);
+                _logger.LogDebug(ex, "{Type} {Item} 的图片未加载", itemType, item);
                 return false;
             }
 
@@ -629,9 +630,9 @@ public class AutoCooking : BaseGameTask
     {
         // 将厨具状态添加到状态检测框
         var allRects = new List<Rect>();
-        allRects.AddRange(_currentDishConfig.RequiredIngredients.Select(i => ScaleRect(ingredientRects[i], scale)));
-        allRects.AddRange(_currentDishConfig.RequiredCondiments.Select(c => ScaleRect(condimentRects[c], scale)));
-        allRects.AddRange(_currentDishConfig.RequiredKitchenware.Select(k => ScaleRect(kitchenwareRects[k], scale)));
+        allRects.AddRange(_currentDishConfig.RequiredIngredients.Select(i => ScaleRect(ingredientRects[i], _scale)));
+        allRects.AddRange(_currentDishConfig.RequiredCondiments.Select(c => ScaleRect(condimentRects[c], _scale)));
+        allRects.AddRange(_currentDishConfig.RequiredKitchenware.Select(k => ScaleRect(kitchenwareRects[k], _scale)));
         
         // 构建带文字的检测框字典
         var textContentsScaled = new Dictionary<Rect, string>();
@@ -647,7 +648,7 @@ public class AutoCooking : BaseGameTask
                     CookingStatus.Overcooked => "糊了！",
                     _ => "未知状态"
                 };
-                textContentsScaled[ScaleRect(rect, scale)] = text;
+                textContentsScaled[ScaleRect(rect, _scale)] = text;
             }
         }
         SetStateRects(allRects, textContentsScaled);

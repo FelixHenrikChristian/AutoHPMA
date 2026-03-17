@@ -93,9 +93,9 @@ namespace AutoHPMA.Config
                     return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 如果读取失败，返回默认设置
+                System.Diagnostics.Debug.WriteLine($"设置加载失败: {ex.Message}");
             }
             return new AppSettings();
         }
@@ -116,9 +116,9 @@ namespace AutoHPMA.Config
                 });
                 File.WriteAllText(SettingsPath, json);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 处理保存失败的情况
+                System.Diagnostics.Debug.WriteLine($"设置保存失败: {ex.Message}");
             }
         }
 
@@ -132,9 +132,9 @@ namespace AutoHPMA.Config
                     File.Delete(SettingsPath);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 处理删除失败的情况
+                System.Diagnostics.Debug.WriteLine($"设置清除失败: {ex.Message}");
             }
         }
     }
