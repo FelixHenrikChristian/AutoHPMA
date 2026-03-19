@@ -28,7 +28,7 @@ namespace AutoHPMA.ViewModels.Pages
         private ObservableCollection<HotkeyBinding> _hotkeyBindings;
 
         [ObservableProperty]
-        private HotkeyBinding _selectedBinding;
+        private HotkeyBinding _selectedBinding = new();
 
         [ObservableProperty]
         private bool _isWaitingForKey;
@@ -290,10 +290,10 @@ namespace AutoHPMA.ViewModels.Pages
     public partial class HotkeyBinding : ObservableObject
     {
         [ObservableProperty]
-        private string _name;
+        private string _name = string.Empty;
 
         [ObservableProperty]
-        private string _description;
+        private string _description = string.Empty;
 
         private ModifierKeys _modifiers;
         public ModifierKeys Modifiers
@@ -318,7 +318,7 @@ namespace AutoHPMA.ViewModels.Pages
         }
 
         [ObservableProperty]
-        private string _group;
+        private string _group = string.Empty;
 
         public Tuple<ModifierKeys, Key> ModKeyTuple => Tuple.Create(Modifiers, Key);
     }

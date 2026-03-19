@@ -10,8 +10,8 @@ namespace AutoHPMA.Messages
 {
     public class SnackbarInfo
     {
-        public string Title { get; set; }
-        public string Message { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
         public ControlAppearance Appearance { get; set; }
         public IconElement? Icon { get; set; }
         public TimeSpan Duration { get; set; }

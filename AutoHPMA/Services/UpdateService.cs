@@ -34,8 +34,7 @@ namespace AutoHPMA.Services
                     await ShowMessageBoxAsync("调试模式", "调试模式下不检查更新");
                 }
                 return;
-#endif
-
+#else
                 var latestRelease = await GetLatestReleaseAsync();
                 if (latestRelease == null)
                 {
@@ -57,6 +56,7 @@ namespace AutoHPMA.Services
                 }
 
                 await ShowUpdateDialogAsync(latestRelease);
+#endif
             }
             catch (Exception ex)
             {
