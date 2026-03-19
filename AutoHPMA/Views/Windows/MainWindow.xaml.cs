@@ -33,6 +33,7 @@ namespace AutoHPMA.Views.Windows
     {
         private readonly ISnackbarService _snackbarService;
         private readonly IUpdateService _updateService;
+        private readonly IAppContextService _appContextService;
         private readonly ILogger<MainWindow> _logger;
         private static KeyboardHookManager? _keyboardHookManager;
         private bool _isAppContextSubscribed;
@@ -44,13 +45,15 @@ namespace AutoHPMA.Views.Windows
             INavigationViewPageProvider navigationViewPageProvider,
             INavigationService navigationService,
             ISnackbarService snackbarService,
-            IUpdateService updateService)
+            IUpdateService updateService,
+            IAppContextService appContextService)
         {
             ViewModel = viewModel;
             DataContext = this;
             _logger = App.GetLogger<MainWindow>();
             _snackbarService = snackbarService;
             _updateService = updateService;
+            _appContextService = appContextService;
 
             InitializeComponent();
 
@@ -95,7 +98,7 @@ namespace AutoHPMA.Views.Windows
         {
             if (_isAppContextSubscribed)
             {
-                AppContextService.Instance.PropertyChanged -= OnAppContextPropertyChanged;
+                _appContextService.PropertyChanged -= OnAppContextPropertyChanged;
                 _isAppContextSubscribed = false;
             }
 
@@ -114,9 +117,9 @@ namespace AutoHPMA.Views.Windows
 
         private void OnAppContextPropertyChanged(object? sender, PropertyChangedEventArgs args)
         {
-            if (args.PropertyName == nameof(AppContextService.DisplayHwnd))
+            if (args.PropertyName == nameof(IAppContextService.DisplayHwnd))
             {
-                _keyboardHookManager?.SetTargetWindow(AppContextService.Instance.DisplayHwnd);
+                _keyboardHookManager?.SetTargetWindow(_appContextService.DisplayHwnd);
             }
         }
 
@@ -127,12 +130,12 @@ namespace AutoHPMA.Views.Windows
             {
                 _keyboardHookManager = new KeyboardHookManager();
                 // 设置初始目标窗口
-                _keyboardHookManager.SetTargetWindow(AppContextService.Instance.DisplayHwnd);
+                _keyboardHookManager.SetTargetWindow(_appContextService.DisplayHwnd);
             }
 
             if (!_isAppContextSubscribed)
             {
-                AppContextService.Instance.PropertyChanged += OnAppContextPropertyChanged;
+                _appContextService.PropertyChanged += OnAppContextPropertyChanged;
                 _isAppContextSubscribed = true;
             }
             

@@ -38,6 +38,7 @@ namespace AutoHPMA.ViewModels.Pages
         private readonly AppSettings _settings;
         private readonly ILogger<TaskViewModel> _logger;
         private readonly IGameTaskFactory _gameTaskFactory;
+        private readonly IAppContextService _appContextService;
 
         #region Observable Properties
 
@@ -77,26 +78,29 @@ namespace AutoHPMA.ViewModels.Pages
 
         #region 服务引用
 
-        private IntPtr _displayHwnd => AppContextService.Instance.DisplayHwnd;
-        private IntPtr _gameHwnd => AppContextService.Instance.GameHwnd;
-        private LogWindow? _logWindow => AppContextService.Instance.LogWindow;
-        private WindowsGraphicsCapture _capture => AppContextService.Instance.Capture;
+        private IntPtr _displayHwnd => _appContextService.DisplayHwnd;
+        private IntPtr _gameHwnd => _appContextService.GameHwnd;
+        private LogWindow? _logWindow => _appContextService.LogWindow;
+        private WindowsGraphicsCapture _capture => _appContextService.Capture;
 
         private IGameTask? _currentTask;
-        private AppContextService appContextService;
 
         #endregion
 
         #region 构造函数
 
-        public TaskViewModel(AppSettings settings, ILogger<TaskViewModel> logger, IGameTaskFactory gameTaskFactory)
+        public TaskViewModel(
+            AppSettings settings,
+            ILogger<TaskViewModel> logger,
+            IGameTaskFactory gameTaskFactory,
+            IAppContextService appContextService)
         {
             _settings = settings;
             _logger = logger;
             _gameTaskFactory = gameTaskFactory;
+            _appContextService = appContextService;
 
-            appContextService = AppContextService.Instance;
-            appContextService.PropertyChanged += AppContextService_PropertyChanged;
+            _appContextService.PropertyChanged += AppContextService_PropertyChanged;
 
             // 注册停止所有任务的消息接收器
             WeakReferenceMessenger.Default.Register<StopAllTasksMessage>(this, (r, message) =>

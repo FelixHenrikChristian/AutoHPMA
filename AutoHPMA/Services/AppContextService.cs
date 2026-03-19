@@ -1,4 +1,5 @@
 ﻿using AutoHPMA.Helpers.CaptureHelper;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace AutoHPMA.Services
 {
-    public class AppContextService : INotifyPropertyChanged
+    public class AppContextService : IAppContextService
     {
         // 单例实例
         private static readonly AppContextService _instance = new AppContextService();
@@ -110,7 +111,7 @@ namespace AutoHPMA.Services
 
         #region INotifyPropertyChanged 实现
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
