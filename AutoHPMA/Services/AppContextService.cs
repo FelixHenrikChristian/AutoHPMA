@@ -12,12 +12,7 @@ namespace AutoHPMA.Services
 {
     public class AppContextService : IAppContextService
     {
-        // 单例实例
-        private static readonly AppContextService _instance = new AppContextService();
-        public static AppContextService Instance => _instance;
-
-        // 构造函数设为 private 防止外部实例化
-        private AppContextService() { }
+        public AppContextService() { }
 
         #region 共享数据属性
         #region Dashboard

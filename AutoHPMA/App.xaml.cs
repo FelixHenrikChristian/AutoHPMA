@@ -46,12 +46,8 @@ namespace AutoHPMA
             {
                 // 注册配置服务
                 services.AddSingleton<AppSettings>(sp => AppSettings.Load());
-
-                var logWindow = new LogWindow();
-                services.AddSingleton(logWindow);
-
-                var maskWindow = new MaskWindow();
-                services.AddSingleton(maskWindow);
+                services.AddTransient<LogWindow>();
+                services.AddTransient<MaskWindow>();
 
                 services.AddNavigationViewPageProvider();
 
@@ -100,7 +96,7 @@ namespace AutoHPMA
                 services.AddSingleton<IOcrService, OcrService>();
                 services.AddSingleton<IGameTaskFactory, GameTaskFactory>();
                 services.AddSingleton<IGameTaskManager, GameTaskManager>();
-                services.AddSingleton<IAppContextService>(sp => AppContextService.Instance);
+                services.AddSingleton<IAppContextService, AppContextService>();
                 
                 // 注册更新服务
                 services.AddSingleton<IUpdateService, UpdateService>();

@@ -11,6 +11,7 @@ using AutoHPMA.Services;
 using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ namespace AutoHPMA.ViewModels.Pages
         private readonly AppSettings _settings;
         private readonly ILogger<DashboardViewModel> _logger;
         private readonly IAppContextService _appContextService;
+        private readonly IServiceProvider _serviceProvider;
         private DispatcherTimer _syncWindowTimer;
 
         #endregion
@@ -110,11 +112,13 @@ namespace AutoHPMA.ViewModels.Pages
         public DashboardViewModel(
             AppSettings settings,
             ILogger<DashboardViewModel> logger,
-            IAppContextService appContextService)
+            IAppContextService appContextService,
+            IServiceProvider serviceProvider)
         {
             _settings = settings;
             _logger = logger;
             _appContextService = appContextService;
+            _serviceProvider = serviceProvider;
             LoadSettings();
         }
 
@@ -231,7 +235,7 @@ namespace AutoHPMA.ViewModels.Pages
                 _syncWindowTimer.Tick += SyncWindowTimer_Tick;
                 _syncWindowTimer.Start();
 
-                _logWindow = new LogWindow();
+                _logWindow = _serviceProvider.GetRequiredService<LogWindow>();
                 _logWindow.Show();
                 _logWindow.ShowInTaskbar = false;
                 _logWindow.RefreshPosition(_gameHwnd);
@@ -244,7 +248,7 @@ namespace AutoHPMA.ViewModels.Pages
 
             if (_maskWindowEnabled)
             {
-                _maskWindow = new MaskWindow();
+                _maskWindow = _serviceProvider.GetRequiredService<MaskWindow>();
                 _maskWindow.Show();
                 _maskWindow.ShowInTaskbar = false;
                 _maskWindow.RefreshPosition(_displayHwnd);
