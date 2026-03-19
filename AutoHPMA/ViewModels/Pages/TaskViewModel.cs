@@ -38,6 +38,7 @@ namespace AutoHPMA.ViewModels.Pages
         private readonly AppSettings _settings;
         private readonly ILogger<TaskViewModel> _logger;
         private readonly IGameTaskFactory _gameTaskFactory;
+        private readonly IGameTaskManager _gameTaskManager;
         private readonly IAppContextService _appContextService;
 
         #region Observable Properties
@@ -83,8 +84,6 @@ namespace AutoHPMA.ViewModels.Pages
         private LogWindow? _logWindow => _appContextService.LogWindow;
         private WindowsGraphicsCapture _capture => _appContextService.Capture;
 
-        private IGameTask? _currentTask;
-
         #endregion
 
         #region 构造函数
@@ -93,14 +92,17 @@ namespace AutoHPMA.ViewModels.Pages
             AppSettings settings,
             ILogger<TaskViewModel> logger,
             IGameTaskFactory gameTaskFactory,
+            IGameTaskManager gameTaskManager,
             IAppContextService appContextService)
         {
             _settings = settings;
             _logger = logger;
             _gameTaskFactory = gameTaskFactory;
+            _gameTaskManager = gameTaskManager;
             _appContextService = appContextService;
 
             _appContextService.PropertyChanged += AppContextService_PropertyChanged;
+            _gameTaskManager.TaskStopped += GameTaskManager_TaskStopped;
 
             // 注册停止所有任务的消息接收器
             WeakReferenceMessenger.Default.Register<StopAllTasksMessage>(this, (r, message) =>
@@ -145,6 +147,11 @@ namespace AutoHPMA.ViewModels.Pages
             // 当共享数据有更新时可以在这里处理
         }
 
+        private void GameTaskManager_TaskStopped(object? sender, EventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() => CurrentTaskType = TaskType.None);
+        }
+
         #endregion
 
         #region 通用任务控制方法
@@ -154,19 +161,6 @@ namespace AutoHPMA.ViewModels.Pages
         /// </summary>
         private bool ValidateRequiredParameters() =>
             _gameHwnd != IntPtr.Zero && _displayHwnd != IntPtr.Zero && _capture != null && _logWindow != null;
-
-        /// <summary>
-        /// 检查是否有任务正在运行
-        /// </summary>
-        private bool CheckTaskRunningStatus()
-        {
-            if (_currentTask != null)
-            {
-                ShowErrorMessage("已有其他任务正在运行，请先停止当前任务！");
-                return true;
-            }
-            return false;
-        }
 
         /// <summary>
         /// 显示错误消息框
@@ -183,22 +177,6 @@ namespace AutoHPMA.ViewModels.Pages
 
 
 
-        /// <summary>
-        /// 订阅任务完成事件
-        /// </summary>
-        private void SubscribeTaskCompleted()
-        {
-            _currentTask!.TaskCompleted += (sender, e) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    CurrentTaskType = TaskType.None;
-                    _currentTask = null;
-                });
-            };
-        }
-
-        /// <summary>
         /// 通用任务启动方法
         /// </summary>
         private bool StartTask(
@@ -206,21 +184,26 @@ namespace AutoHPMA.ViewModels.Pages
             string taskName,
             Func<IGameTask> createTask)
         {
-            if (CheckTaskRunningStatus()) return false;
-
             if (!ValidateRequiredParameters())
             {
                 ShowErrorMessage("任务启动失败。请先启动截图器!");
                 return false;
             }
 
+            if (_gameTaskManager.IsTaskRunning)
+            {
+                ShowErrorMessage("已有其他任务正在运行，请先停止当前任务！");
+                return false;
+            }
+
+            if (!_gameTaskManager.TryStartTask(createTask, out var errorMessage))
+            {
+                ShowErrorMessage($"任务启动失败：{errorMessage}");
+                return false;
+            }
+
             SnackbarHelper.ShowSuccess("启动成功", $"{taskName}已启动。");
             CurrentTaskType = taskType;
-
-            _currentTask = createTask();
-
-            SubscribeTaskCompleted();
-            _currentTask.Start();
             return true;
         }
 
@@ -229,9 +212,7 @@ namespace AutoHPMA.ViewModels.Pages
         /// </summary>
         private void StopTask()
         {
-            _currentTask?.Stop();
-            _currentTask?.Dispose();
-            _currentTask = null;
+            _gameTaskManager.StopCurrentTask();
             CurrentTaskType = TaskType.None;
         }
 
@@ -240,7 +221,7 @@ namespace AutoHPMA.ViewModels.Pages
         /// </summary>
         private void StopAllRunningTasks()
         {
-            if (_currentTask != null)
+            if (_gameTaskManager.IsTaskRunning)
             {
                 _logger.LogInformation("收到停止信号，正在停止当前任务...");
                 StopTask();
