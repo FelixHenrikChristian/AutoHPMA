@@ -27,14 +27,12 @@ namespace AutoHPMA.Services
         {
             try
             {
-#if DEBUG
-                // 在调试模式下跳过更新检查
                 if (option.Trigger == UpdateTrigger.Manual)
                 {
                     await ShowMessageBoxAsync("调试模式", "调试模式下不检查更新");
                 }
                 return;
-#else
+
                 var latestRelease = await GetLatestReleaseAsync();
                 if (latestRelease == null)
                 {
@@ -56,7 +54,6 @@ namespace AutoHPMA.Services
                 }
 
                 await ShowUpdateDialogAsync(latestRelease);
-#endif
             }
             catch (Exception ex)
             {

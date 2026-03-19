@@ -18,7 +18,7 @@ namespace AutoHPMA.Services
     {
         private readonly IServiceProvider _serviceProvider;
 
-        private INavigationWindow? _navigationWindow;
+        private INavigationWindow _navigationWindow;
 
         public ApplicationHostService(IServiceProvider serviceProvider)
         {
@@ -50,13 +50,11 @@ namespace AutoHPMA.Services
         {
             if (!Application.Current.Windows.OfType<MainWindow>().Any())
             {
-                _navigationWindow = _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow;
-                if (_navigationWindow == null)
-                {
-                    throw new InvalidOperationException("Unable to resolve INavigationWindow from service provider.");
-                }
+                _navigationWindow = (
+                    _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
+                )!;
+                _navigationWindow!.ShowWindow();
 
-                _navigationWindow.ShowWindow();
                 _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 

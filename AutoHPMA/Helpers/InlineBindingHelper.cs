@@ -103,7 +103,7 @@ namespace AutoHPMA.Helpers
 
         private class TextSegment
         {
-            public string Text { get; set; } = string.Empty;
+            public string Text { get; set; }
             public Color? Color { get; set; }
         }
     }
