@@ -234,7 +234,6 @@ namespace AutoHPMA.ViewModels.Pages
             
             try
             {
-                Task.Delay(100).Wait();
                 using var frame = capture.Capture();
                 if (frame != null)
                 {

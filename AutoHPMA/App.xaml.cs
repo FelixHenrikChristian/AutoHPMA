@@ -17,8 +17,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using Wpf.Ui;
 using Wpf.Ui.DependencyInjection;
@@ -115,6 +118,7 @@ namespace AutoHPMA
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            RegisterEvents();
             await _host.StartAsync();
 
             // 检查是否显示过使用条款
@@ -162,7 +166,60 @@ namespace AutoHPMA
         /// </summary>
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=windowsdesktop-6.0
+            try
+            {
+                HandleException(e.Exception);
+            }
+            finally
+            {
+                // 已记录并提示后，避免应用直接崩溃。
+                e.Handled = true;
+            }
+        }
+
+        private void RegisterEvents()
+        {
+            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
+            DispatcherUnhandledException += OnDispatcherUnhandledException;
+        }
+
+        private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            try
+            {
+                HandleException(e.Exception);
+            }
+            finally
+            {
+                e.SetObserved();
+            }
+        }
+
+        private static void OnCurrentDomainUnhandledException(object? sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject is Exception exception)
+            {
+                HandleException(exception);
+            }
+        }
+
+        private static void HandleException(Exception exception)
+        {
+            GetLogger<App>().LogError(exception, "Unhandled exception");
+
+            try
+            {
+                System.Windows.MessageBox.Show(
+                    $"程序发生未处理异常：{exception.Message}",
+                    "AutoHPMA 异常",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ using AutoHPMA.ViewModels.Pages;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 
 namespace AutoHPMA.Views.Windows
 {
@@ -34,6 +35,7 @@ namespace AutoHPMA.Views.Windows
         private readonly IUpdateService _updateService;
         private readonly ILogger<MainWindow> _logger;
         private static KeyboardHookManager? _keyboardHookManager;
+        private bool _isAppContextSubscribed;
 
         public MainWindowViewModel ViewModel { get; }
 
@@ -91,23 +93,32 @@ namespace AutoHPMA.Views.Windows
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
+            if (_isAppContextSubscribed)
+            {
+                AppContextService.Instance.PropertyChanged -= OnAppContextPropertyChanged;
+                _isAppContextSubscribed = false;
+            }
+
             base.OnClosed(e);
 
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
         }
 
-        INavigationView INavigationWindow.GetNavigation()
-        {
-            throw new NotImplementedException();
-        }
+        INavigationView INavigationWindow.GetNavigation() => RootNavigation;
 
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
-            throw new NotImplementedException();
+            // WPF UI 兼容入口，当前页面提供器在构造函数中已设置。
         }
 
-
+        private void OnAppContextPropertyChanged(object? sender, PropertyChangedEventArgs args)
+        {
+            if (args.PropertyName == nameof(AppContextService.DisplayHwnd))
+            {
+                _keyboardHookManager?.SetTargetWindow(AppContextService.Instance.DisplayHwnd);
+            }
+        }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -117,15 +128,12 @@ namespace AutoHPMA.Views.Windows
                 _keyboardHookManager = new KeyboardHookManager();
                 // 设置初始目标窗口
                 _keyboardHookManager.SetTargetWindow(AppContextService.Instance.DisplayHwnd);
-                
-                // 监听 DisplayHwnd 变化，动态更新目标窗口
-                AppContextService.Instance.PropertyChanged += (s, args) =>
-                {
-                    if (args.PropertyName == nameof(AppContextService.DisplayHwnd))
-                    {
-                        _keyboardHookManager.SetTargetWindow(AppContextService.Instance.DisplayHwnd);
-                    }
-                };
+            }
+
+            if (!_isAppContextSubscribed)
+            {
+                AppContextService.Instance.PropertyChanged += OnAppContextPropertyChanged;
+                _isAppContextSubscribed = true;
             }
             
             var hotkeyVM = App.Services.GetService(typeof(HotkeySettingsViewModel)) as HotkeySettingsViewModel;

@@ -435,14 +435,7 @@ namespace AutoHPMA.GameTask
         {
             if (!_isStateMonitoring) return;
             _isStateMonitoring = false;
-            
-            // 等待后台任务完成，确保不会在设置"空闲"状态后再更新状态显示
-            try
-            {
-                _stateMonitorTask?.Wait(TimeSpan.FromSeconds(1));
-            }
-            catch (AggregateException) { /* 忽略任务取消异常 */ }
-            
+
             _logger.LogDebug("状态监测已停止");
         }
 
