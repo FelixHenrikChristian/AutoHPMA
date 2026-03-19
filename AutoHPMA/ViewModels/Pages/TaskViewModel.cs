@@ -33,7 +33,7 @@ namespace AutoHPMA.ViewModels.Pages
         AutoSweetAdventure
     }
 
-    public partial class TaskViewModel : ObservableObject, INavigationAware
+    public partial class TaskViewModel : ObservableObject, INavigationAware, IDisposable
     {
         private readonly AppSettings _settings;
         private readonly ILogger<TaskViewModel> _logger;
@@ -324,6 +324,13 @@ namespace AutoHPMA.ViewModels.Pages
         public Task OnNavigatedFromAsync() => Task.CompletedTask;
 
         #endregion
+
+        public void Dispose()
+        {
+            _appContextService.PropertyChanged -= AppContextService_PropertyChanged;
+            _gameTaskManager.TaskStopped -= GameTaskManager_TaskStopped;
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
 
         #region 设置保存
 

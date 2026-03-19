@@ -18,7 +18,7 @@ using OpenCvSharp.Extensions;
 
 namespace AutoHPMA.ViewModels.Pages
 {
-    public partial class HotkeySettingsViewModel : ObservableObject
+    public partial class HotkeySettingsViewModel : ObservableObject, IDisposable
     {
         private readonly AppSettings _settings;
         private readonly ILogger<HotkeySettingsViewModel> _logger;
@@ -52,6 +52,11 @@ namespace AutoHPMA.ViewModels.Pages
         /// </summary>
         public void SetKeyboardHookManager(KeyboardHookManager manager)
         {
+            if (_keyboardHookManager != null)
+            {
+                _keyboardHookManager.HotkeyPressed -= OnHotkeyPressed;
+            }
+
             _keyboardHookManager = manager;
             _keyboardHookManager.HotkeyPressed += OnHotkeyPressed;
             RegisterAllHotkeys();
@@ -271,6 +276,14 @@ namespace AutoHPMA.ViewModels.Pages
 
             if (dashboardVM.ToggleButtonEnabled)
                 dashboardVM.ToggleAutoHPMA();
+        }
+
+        public void Dispose()
+        {
+            if (_keyboardHookManager != null)
+            {
+                _keyboardHookManager.HotkeyPressed -= OnHotkeyPressed;
+            }
         }
     }
 
