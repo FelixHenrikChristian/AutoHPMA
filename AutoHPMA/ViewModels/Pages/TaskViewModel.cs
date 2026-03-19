@@ -1,10 +1,9 @@
 ﻿using AutoHPMA.GameTask;
-using AutoHPMA.GameTask.Permanent;
-using AutoHPMA.GameTask.Temporary;
 using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Messages;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using AutoHPMA.Config;
 using CommunityToolkit.Mvvm.Messaging;
@@ -38,8 +37,7 @@ namespace AutoHPMA.ViewModels.Pages
     {
         private readonly AppSettings _settings;
         private readonly ILogger<TaskViewModel> _logger;
-        private readonly CookingConfigService _cookingConfigService;
-        private readonly IOcrService _ocrService;
+        private readonly IGameTaskFactory _gameTaskFactory;
 
         #region Observable Properties
 
@@ -91,12 +89,11 @@ namespace AutoHPMA.ViewModels.Pages
 
         #region 构造函数
 
-        public TaskViewModel(AppSettings settings, ILogger<TaskViewModel> logger, CookingConfigService cookingConfigService, IOcrService ocrService)
+        public TaskViewModel(AppSettings settings, ILogger<TaskViewModel> logger, IGameTaskFactory gameTaskFactory)
         {
             _settings = settings;
             _logger = logger;
-            _cookingConfigService = cookingConfigService;
-            _ocrService = ocrService;
+            _gameTaskFactory = gameTaskFactory;
 
             appContextService = AppContextService.Instance;
             appContextService.PropertyChanged += AppContextService_PropertyChanged;
@@ -203,8 +200,7 @@ namespace AutoHPMA.ViewModels.Pages
         private bool StartTask(
             TaskType taskType,
             string taskName,
-            Func<IGameTask> createTask,
-            Dictionary<string, object>? parameters = null)
+            Func<IGameTask> createTask)
         {
             if (CheckTaskRunningStatus()) return false;
 
@@ -218,10 +214,6 @@ namespace AutoHPMA.ViewModels.Pages
             CurrentTaskType = taskType;
 
             _currentTask = createTask();
-            if (parameters != null)
-            {
-                _currentTask.SetParameters(parameters);
-            }
 
             SubscribeTaskCompleted();
             _currentTask.Start();
@@ -270,13 +262,12 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoClubQuiz,
                     "自动社团答题",
-                    () => new AutoClubQuiz(App.GetLogger<AutoClubQuiz>(), _ocrService, _displayHwnd, _gameHwnd),
-                    new Dictionary<string, object>
-                    {
-                        { "AnswerDelay", AnswerDelay },
-                        { "JoinOthers", JoinOthers },
-                        { "StopWhenContributionFull", StopWhenContributionFull }
-                    });
+                    () => _gameTaskFactory.CreateAutoClubQuiz(
+                        _displayHwnd,
+                        _gameHwnd,
+                        AnswerDelay,
+                        JoinOthers,
+                        StopWhenContributionFull));
         }
 
         [RelayCommand]
@@ -288,12 +279,11 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoForbiddenForest,
                     "自动禁林",
-                    () => new AutoForbiddenForest(App.GetLogger<AutoForbiddenForest>(), _displayHwnd, _gameHwnd),
-                    new Dictionary<string, object>
-                    {
-                        { "Times", AutoForbiddenForestTimes },
-                        { "TeamPosition", SelectedTeamPosition }
-                    });
+                    () => _gameTaskFactory.CreateAutoForbiddenForest(
+                        _displayHwnd,
+                        _gameHwnd,
+                        AutoForbiddenForestTimes,
+                        SelectedTeamPosition));
         }
 
         [RelayCommand]
@@ -305,12 +295,11 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoCooking,
                     "自动烹饪",
-                    () => new AutoCooking(App.GetLogger<AutoCooking>(), _cookingConfigService, _ocrService, _displayHwnd, _gameHwnd),
-                    new Dictionary<string, object>
-                    {
-                        { "Times", AutoCookingTimes },
-                        { "Dish", AutoCookingSelectedDish }
-                    });
+                    () => _gameTaskFactory.CreateAutoCooking(
+                        _displayHwnd,
+                        _gameHwnd,
+                        AutoCookingTimes,
+                        AutoCookingSelectedDish));
         }
 
         [RelayCommand]
@@ -322,7 +311,7 @@ namespace AutoHPMA.ViewModels.Pages
                 StartTask(
                     TaskType.AutoSweetAdventure,
                     "甜蜜冒险",
-                    () => new AutoSweetAdventure(App.GetLogger<AutoSweetAdventure>(), _displayHwnd, _gameHwnd));
+                    () => _gameTaskFactory.CreateAutoSweetAdventure(_displayHwnd, _gameHwnd));
         }
 
         [RelayCommand]

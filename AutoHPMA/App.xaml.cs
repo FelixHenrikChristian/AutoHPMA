@@ -98,6 +98,7 @@ namespace AutoHPMA
 
                 services.AddSingleton<CookingConfigService>();
                 services.AddSingleton<IOcrService, OcrService>();
+                services.AddSingleton<IGameTaskFactory, GameTaskFactory>();
                 
                 // 注册更新服务
                 services.AddSingleton<IUpdateService, UpdateService>();
