@@ -6,6 +6,7 @@ using AutoHPMA.GameTask.Core.Recognition;
 using AutoHPMA.GameTask.Core.Simulator;
 using AutoHPMA.GameTask.Core.Overlay;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -21,9 +22,10 @@ namespace AutoHPMA.GameTask
 {
     public abstract class BaseGameTask : IGameTask
     {
-        protected static LogWindow _logWindow => AppContextService.Instance.LogWindow;
-        protected static MaskWindow _maskWindow => AppContextService.Instance.MaskWindow;
-        protected static WindowsGraphicsCapture _capture => AppContextService.Instance.Capture;
+        protected LogWindow _logWindow => _appContextService.LogWindow;
+        protected MaskWindow _maskWindow => _appContextService.MaskWindow;
+        protected WindowsGraphicsCapture _capture => _appContextService.Capture;
+        protected readonly IAppContextService _appContextService;
 
         protected readonly ILogger _logger;
         protected nint _displayHwnd, _gameHwnd;
@@ -50,9 +52,10 @@ namespace AutoHPMA.GameTask
 
         public event EventHandler? TaskCompleted;
 
-        public BaseGameTask(ILogger logger, nint displayHwnd, nint gameHwnd)
+        public BaseGameTask(ILogger logger, IAppContextService appContextService, nint displayHwnd, nint gameHwnd)
         {
             _logger = logger;
+            _appContextService = appContextService;
             _displayHwnd = displayHwnd;
             _gameHwnd = gameHwnd;
             _cts = new CancellationTokenSource();
@@ -407,7 +410,7 @@ namespace AutoHPMA.GameTask
         {
             if (_isStateMonitoring) return;
             _isStateMonitoring = true;
-            _stateMonitorIntervalMs = AppContextService.Instance.StateMonitorInterval;
+            _stateMonitorIntervalMs = _appContextService.StateMonitorInterval;
             _stateMonitorTask = Task.Run(async () =>
             {
                 while (_isStateMonitoring && !_cts.Token.IsCancellationRequested)

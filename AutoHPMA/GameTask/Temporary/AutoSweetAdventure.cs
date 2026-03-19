@@ -2,6 +2,7 @@ using AutoHPMA.GameTask.Model;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -33,8 +34,12 @@ public class AutoSweetAdventure : BaseGameTask
     // 状态检测规则
     private StateRule<AutoSweetAdventureState>[] _stateRules = null!;
 
-    public AutoSweetAdventure(ILogger<AutoSweetAdventure> logger, nint displayHwnd, nint gameHwnd)
-        : base(logger, displayHwnd, gameHwnd)
+    public AutoSweetAdventure(
+        ILogger<AutoSweetAdventure> logger,
+        IAppContextService appContextService,
+        nint displayHwnd,
+        nint gameHwnd)
+        : base(logger, appContextService, displayHwnd, gameHwnd)
     {
         LoadAssets();
         CalculateOffset();

@@ -49,7 +49,7 @@ namespace AutoHPMA.Services
             }
         }
 
-        private LogWindow _logWindow;
+        private LogWindow _logWindow = null!;
         public LogWindow LogWindow
         {
             get => _logWindow;
@@ -63,7 +63,7 @@ namespace AutoHPMA.Services
             }
         }
 
-        private MaskWindow _maskWindow;
+        private MaskWindow _maskWindow = null!;
         public MaskWindow MaskWindow
         {
             get => _maskWindow;
@@ -77,7 +77,7 @@ namespace AutoHPMA.Services
             }
         }
 
-        private WindowsGraphicsCapture _capture;
+        private WindowsGraphicsCapture _capture = null!;
         public WindowsGraphicsCapture Capture
         {
             get => _capture;

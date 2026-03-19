@@ -4,6 +4,7 @@ using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Helpers.RecognizeHelper;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -43,8 +44,12 @@ public class AutoForbiddenForest : BaseGameTask
     // 状态检测规则
     private StateRule<AutoForbiddenForestState>[] _stateRules = null!;
 
-    public AutoForbiddenForest(ILogger<AutoForbiddenForest> logger, nint displayHwnd, nint gameHwnd)
-        : base(logger, displayHwnd, gameHwnd)
+    public AutoForbiddenForest(
+        ILogger<AutoForbiddenForest> logger,
+        IAppContextService appContextService,
+        nint displayHwnd,
+        nint gameHwnd)
+        : base(logger, appContextService, displayHwnd, gameHwnd)
     {
         LoadAssets();
         CalculateOffset();

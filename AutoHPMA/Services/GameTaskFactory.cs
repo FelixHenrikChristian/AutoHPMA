@@ -11,15 +11,18 @@ public class GameTaskFactory : IGameTaskFactory
     private readonly ILoggerFactory _loggerFactory;
     private readonly CookingConfigService _cookingConfigService;
     private readonly IOcrService _ocrService;
+    private readonly IAppContextService _appContextService;
 
     public GameTaskFactory(
         ILoggerFactory loggerFactory,
         CookingConfigService cookingConfigService,
-        IOcrService ocrService)
+        IOcrService ocrService,
+        IAppContextService appContextService)
     {
         _loggerFactory = loggerFactory;
         _cookingConfigService = cookingConfigService;
         _ocrService = ocrService;
+        _appContextService = appContextService;
     }
 
     public IGameTask CreateAutoClubQuiz(
@@ -32,6 +35,7 @@ public class GameTaskFactory : IGameTaskFactory
         var task = new AutoClubQuiz(
             _loggerFactory.CreateLogger<AutoClubQuiz>(),
             _ocrService,
+            _appContextService,
             displayHwnd,
             gameHwnd);
 
@@ -56,6 +60,7 @@ public class GameTaskFactory : IGameTaskFactory
     {
         var task = new AutoForbiddenForest(
             _loggerFactory.CreateLogger<AutoForbiddenForest>(),
+            _appContextService,
             displayHwnd,
             gameHwnd);
 
@@ -81,6 +86,7 @@ public class GameTaskFactory : IGameTaskFactory
             _loggerFactory.CreateLogger<AutoCooking>(),
             _cookingConfigService,
             _ocrService,
+            _appContextService,
             displayHwnd,
             gameHwnd);
 
@@ -100,6 +106,7 @@ public class GameTaskFactory : IGameTaskFactory
     {
         return new AutoSweetAdventure(
             _loggerFactory.CreateLogger<AutoSweetAdventure>(),
+            _appContextService,
             displayHwnd,
             gameHwnd);
     }

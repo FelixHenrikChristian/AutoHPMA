@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using AutoHPMA.ViewModels.Pages;
 using Microsoft.Extensions.Logging;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using Wpf.Ui.Controls;
 using OpenCvSharp.Extensions;
 
@@ -21,6 +22,7 @@ namespace AutoHPMA.ViewModels.Pages
     {
         private readonly AppSettings _settings;
         private readonly ILogger<HotkeySettingsViewModel> _logger;
+        private readonly IAppContextService _appContextService;
 
         [ObservableProperty]
         private ObservableCollection<HotkeyBinding> _hotkeyBindings;
@@ -33,10 +35,14 @@ namespace AutoHPMA.ViewModels.Pages
 
         private KeyboardHookManager? _keyboardHookManager;
 
-        public HotkeySettingsViewModel(AppSettings settings, ILogger<HotkeySettingsViewModel> logger)
+        public HotkeySettingsViewModel(
+            AppSettings settings,
+            ILogger<HotkeySettingsViewModel> logger,
+            IAppContextService appContextService)
         {
             _settings = settings;
             _logger = logger;
+            _appContextService = appContextService;
             _hotkeyBindings = new ObservableCollection<HotkeyBinding>();
             LoadHotkeyBindings();
         }
@@ -220,7 +226,7 @@ namespace AutoHPMA.ViewModels.Pages
 
         private void ExecuteScreenshot()
         {
-            var capture = AppContextService.Instance.Capture;
+            var capture = _appContextService.Capture;
             
             if (capture == null)
             {

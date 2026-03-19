@@ -5,6 +5,7 @@ using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Helpers.RecognizeHelper;
 using AutoHPMA.Models;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -89,8 +90,14 @@ public class AutoCooking : BaseGameTask
     // 状态检测规则
     private StateRule<AutoCookingState>[] _stateRules = null!;
 
-    public AutoCooking(ILogger<AutoCooking> logger, CookingConfigService cookingConfigService, IOcrService ocrService, nint displayHwnd, nint gameHwnd)
-        : base(logger, displayHwnd, gameHwnd)
+    public AutoCooking(
+        ILogger<AutoCooking> logger,
+        CookingConfigService cookingConfigService,
+        IOcrService ocrService,
+        IAppContextService appContextService,
+        nint displayHwnd,
+        nint gameHwnd)
+        : base(logger, appContextService, displayHwnd, gameHwnd)
     {
         _cookingConfigService = cookingConfigService;
         _ocrService = ocrService;

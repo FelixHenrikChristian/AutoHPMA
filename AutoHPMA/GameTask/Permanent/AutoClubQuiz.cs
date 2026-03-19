@@ -5,6 +5,7 @@ using AutoHPMA.Helpers.DataHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.Helpers.RecognizeHelper;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -67,8 +68,13 @@ public class AutoClubQuiz : BaseGameTask
     // 状态检测规则
     private StateRule<AutoClubQuizState>[] _stateRules = null!;
 
-    public AutoClubQuiz(ILogger<AutoClubQuiz> logger, IOcrService ocrService, nint displayHwnd, nint gameHwnd)
-        : base(logger, displayHwnd, gameHwnd)
+    public AutoClubQuiz(
+        ILogger<AutoClubQuiz> logger,
+        IOcrService ocrService,
+        IAppContextService appContextService,
+        nint displayHwnd,
+        nint gameHwnd)
+        : base(logger, appContextService, displayHwnd, gameHwnd)
     {
         _ocrService = ocrService;
         _excelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/Tasks/ClubQuiz", "club_question_bank.xlsx");
