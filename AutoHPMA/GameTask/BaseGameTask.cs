@@ -2,6 +2,9 @@ using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Helpers.ImageHelper;
 using AutoHPMA.GameTask.Model;
+using AutoHPMA.GameTask.Core.Recognition;
+using AutoHPMA.GameTask.Core.Simulator;
+using AutoHPMA.GameTask.Core.Overlay;
 using AutoHPMA.Services;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
@@ -31,6 +34,11 @@ namespace AutoHPMA.GameTask
         protected Dictionary<string, Mat> _images = new();
         private bool _disposed = false;
 
+        // 核心服务
+        protected readonly TemplateMatchService _matchService;
+        protected readonly InputSimulator _inputSimulator;
+        protected readonly OverlayService _overlayService;
+
         // 状态监测任务
         private Task? _stateMonitorTask;
         private volatile bool _isStateMonitoring = false;
@@ -50,6 +58,10 @@ namespace AutoHPMA.GameTask
             _cts = new CancellationTokenSource();
             InitializeOperationCts();
             CalculateOffset();
+
+            _matchService = new TemplateMatchService(_scale);
+            _inputSimulator = new InputSimulator(_gameHwnd, _scale, _offsetX, _offsetY);
+            _overlayService = new OverlayService(_maskWindow);
         }
 
         #region 操作取消管理
@@ -214,109 +226,18 @@ namespace AutoHPMA.GameTask
             return FindInSource(captureMat, template, options);
         }
 
-        /// <summary>
-        /// 在给定的图像中查找模板（不重新截屏）
-        /// </summary>
-        /// <param name="source">源图像</param>
-        /// <param name="template">模板图像（支持 BGR 或 BGRA）</param>
-        /// <param name="options">匹配选项（可选）</param>
-        /// <returns>匹配结果</returns>
         protected MatchResult FindInSource(Mat source, Mat template, MatchOptions? options = null)
         {
-            options ??= new MatchOptions();
-
-            // 源图区域遮罩：仅在不规则非零像素区域内匹配（侵蚀后得到与 result 同尺寸的 ROI 遮罩）
-            Mat? resultRoiMask = null;
-            if (options.SourceMask != null)
-            {
-                try
-                {
-                    resultRoiMask = MatchTemplateHelper.BuildResultRoiMaskFromSourceMask(
-                        options.SourceMask, source.Width, source.Height, template.Width, template.Height);
-                }
-                catch
-                {
-                    resultRoiMask?.Dispose();
-                    resultRoiMask = null;
-                }
-            }
-
-            try
-            {
-                Mat templateBGR;
-                Mat? mask = options.Mask;
-
-                if (template.Channels() == 4)
-                {
-                    if (options.UseAlphaMask && mask == null)
-                        mask = MatchTemplateHelper.GenerateMask(template);
-                    templateBGR = new Mat();
-                    Cv2.CvtColor(template, templateBGR, ColorConversionCodes.BGRA2BGR);
-                }
-                else
-                {
-                    templateBGR = template;
-                }
-
-                if (options.FindMultiple)
-                {
-                    var rects = MatchTemplateHelper.MatchOnePicForOnePic(
-                        source, templateBGR, options.MatchMode, mask, options.Threshold, maxCount: -1, resultRoiMask);
-
-                    if (rects.Count == 0) return MatchResult.Failed;
-
-                    return new MatchResult
-                    {
-                        Success = true,
-                        Location = new Point(rects[0].X, rects[0].Y),
-                        Rects = rects.Select(rr => ScaleRect(rr, _scale)).ToList(),
-                        RectsUnscaled = rects,
-                        TemplateSize = new Size(template.Width, template.Height)
-                    };
-                }
-                else
-                {
-                    var matchPoint = MatchTemplateHelper.MatchTemplate(
-                        source, templateBGR, options.MatchMode, mask, options.Threshold, resultRoiMask);
-
-                    if (matchPoint == default) return MatchResult.Failed;
-
-                    var unscaledRect = new Rect(matchPoint.X, matchPoint.Y, template.Width, template.Height);
-
-                    return new MatchResult
-                    {
-                        Success = true,
-                        Location = matchPoint,
-                        Rects = new List<Rect> { ScaleRect(unscaledRect, _scale) },
-                        RectsUnscaled = new List<Rect> { unscaledRect },
-                        TemplateSize = new Size(template.Width, template.Height)
-                    };
-                }
-            }
-            finally
-            {
-                resultRoiMask?.Dispose();
-            }
+            return _matchService.FindInSource(source, template, options);
         }
 
         #endregion
 
         #region 点击操作（Click）
 
-        /// <summary>
-        /// 异步点击指定位置（未缩放坐标）
-        /// </summary>
-        /// <param name="location">未缩放的坐标位置</param>
         protected async Task ClickAsync(Point location)
         {
-            var token = OperationToken;
-            token.ThrowIfCancellationRequested();
-            await WindowInteractionHelper.SendMouseClickAsync(
-                _gameHwnd,
-                (uint)(location.X * _scale - _offsetX),
-                (uint)(location.Y * _scale - _offsetY),
-                token
-            );
+            await _inputSimulator.ClickAsync(location, OperationToken);
         }
 
         /// <summary>
@@ -370,37 +291,18 @@ namespace AutoHPMA.GameTask
 
         #region 拖拽操作
 
-        /// <summary>
-        /// 异步拖拽移动（未缩放坐标），不阻塞线程
-        /// </summary>
         protected async Task<bool> DragMoveAsync(Point start, Point end, int duration = 500)
         {
-            var token = OperationToken;
-            token.ThrowIfCancellationRequested();
-            await WindowInteractionHelper.SendMouseDragWithNoiseAsync(
-                _gameHwnd,
-                (uint)(start.X * _scale - _offsetX),
-                (uint)(start.Y * _scale - _offsetY),
-                (uint)(end.X * _scale - _offsetX),
-                (uint)(end.Y * _scale - _offsetY),
-                duration,
-                token
-            );
-            return true;
+            return await _inputSimulator.DragMoveAsync(start, end, duration, OperationToken);
         }
 
         #endregion
 
         #region 键盘操作
 
-        /// <summary>
-        /// 异步发送空格键
-        /// </summary>
         protected async Task SendSpaceAsync()
         {
-            var token = OperationToken;
-            token.ThrowIfCancellationRequested();
-            await WindowInteractionHelper.SendSpaceAsync(_gameHwnd, token);
+            await _inputSimulator.SendSpaceAsync(OperationToken);
         }
 
         /// <summary>
@@ -408,9 +310,7 @@ namespace AutoHPMA.GameTask
         /// </summary>
         protected async Task SendEnterAsync()
         {
-            var token = OperationToken;
-            token.ThrowIfCancellationRequested();
-            await WindowInteractionHelper.SendEnterAsync(_gameHwnd, token);
+            await _inputSimulator.SendEnterAsync(OperationToken);
         }
 
         /// <summary>
@@ -418,26 +318,16 @@ namespace AutoHPMA.GameTask
         /// </summary>
         protected async Task SendESCAsync()
         {
-            var token = OperationToken;
-            token.ThrowIfCancellationRequested();
-            await WindowInteractionHelper.SendESCAsync(_gameHwnd, token);
+            await _inputSimulator.SendESCAsync(OperationToken);
         }
 
         #endregion
 
         #region 显示检测框
 
-        /// <summary>
-        /// 显示匹配结果的临时检测框
-        /// </summary>
-        /// <param name="result">匹配结果</param>
-        /// <param name="durationMs">显示时长（毫秒），默认 1500ms</param>
         protected void ShowMatchRects(MatchResult result, int durationMs = 500)
         {
-            if (result.Success)
-            {
-                _maskWindow?.AddTemporaryRects(result.Rects, durationMs: durationMs);
-            }
+            _overlayService.ShowMatchRects(result, durationMs);
         }
 
         /// <summary>
@@ -447,7 +337,7 @@ namespace AutoHPMA.GameTask
         /// <param name="textContents">可选的文字内容字典</param>
         protected void SetStateRects(List<Rect> rects, Dictionary<Rect, string>? textContents = null)
         {
-            _maskWindow?.SetTaskStateRects(rects, textContents);
+            _overlayService.SetStateRects(rects, textContents);
         }
 
         /// <summary>
@@ -455,7 +345,7 @@ namespace AutoHPMA.GameTask
         /// </summary>
         protected void ClearStateRects()
         {
-            _maskWindow?.ClearTaskStateRects();
+            _overlayService.ClearStateRects();
         }
 
         #endregion
