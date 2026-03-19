@@ -9,6 +9,7 @@ using Microsoft.Win32;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using OpenCvSharp.WpfExtensions;
+using Microsoft.Extensions.Logging;
 using Wpf.Ui.Controls;
 using MessageBox = Wpf.Ui.Controls.MessageBox;
 
@@ -21,12 +22,14 @@ public partial class ScreenshotPreviewWindow : FluentWindow
     private CancellationTokenSource? _cancellationTokenSource;
     private IScreenCapture? _capture;
     private Mat? _currentFrame;
+    private readonly ILogger<ScreenshotPreviewWindow> _logger;
 
     public ScreenshotPreviewWindow(CaptureMethod captureMethod, IntPtr targetWindow)
     {
         InitializeComponent();
         _captureMethod = captureMethod;
         _targetWindow = targetWindow;
+        _logger = App.GetLogger<ScreenshotPreviewWindow>();
 
         Title = $"截屏实时预览 - {captureMethod}";
         StatusText.Text = $"截屏方式: {captureMethod}";
@@ -35,7 +38,10 @@ public partial class ScreenshotPreviewWindow : FluentWindow
         MouseLeftButtonDown += (_, _) =>
         {
             try { DragMove(); }
-            catch (InvalidOperationException) { }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogDebug(ex, "窗口拖拽失败，可能由窗口状态变化导致。");
+            }
         };
 
         // 窗口加载后自动开始捕获
@@ -174,7 +180,10 @@ public partial class ScreenshotPreviewWindow : FluentWindow
     private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         try { DragMove(); }
-        catch (InvalidOperationException) { }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogDebug(ex, "标题栏拖拽失败，可能由窗口状态变化导致。");
+        }
     }
 
     protected override void OnClosed(EventArgs e)

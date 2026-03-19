@@ -1,6 +1,7 @@
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,8 +55,7 @@ namespace AutoHPMA.Helpers.ImageHelper
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex.Message);
-                //_logger.LogDebug(ex, ex.Message);
+                Debug.WriteLine($"MatchTemplate 异常: {ex}");
                 return default;
             }
         }
@@ -87,9 +87,9 @@ namespace AutoHPMA.Helpers.ImageHelper
 
                 return points;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 静默处理异常，返回已找到的结果
+                Debug.WriteLine($"MatchTemplateMulti 异常: {ex}");
                 return points;
             }
         }

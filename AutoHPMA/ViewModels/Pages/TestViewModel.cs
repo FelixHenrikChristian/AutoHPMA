@@ -927,13 +927,15 @@ namespace AutoHPMA.ViewModels.Pages
                 SolidColorOnly = true
             };
 
-            // 尝试设置当前颜色为初始值
-            try
+            // 尝试设置当前颜色为初始值，格式不合法时保持系统默认颜色。
+            if (!string.IsNullOrWhiteSpace(TargetColorHex) &&
+                TargetColorHex.Length == 6 &&
+                int.TryParse(TargetColorHex[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
+                int.TryParse(TargetColorHex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out var g) &&
+                int.TryParse(TargetColorHex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out var b))
             {
-                var currentColor = ColorFilterHelper.GetColorFromHex(TargetColorHex);
-                colorDialog.Color = System.Drawing.Color.FromArgb(currentColor.R, currentColor.G, currentColor.B);
+                colorDialog.Color = System.Drawing.Color.FromArgb(r, g, b);
             }
-            catch { }
 
             if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {

@@ -597,8 +597,17 @@ namespace AutoHPMA.GameTask
                 _images.Clear();
 
                 // 释放取消令牌
-                try { _operationCts?.Dispose(); } catch { }
-                try { _cts?.Dispose(); } catch { }
+                try { _operationCts?.Dispose(); }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "释放 operation CTS 失败");
+                }
+
+                try { _cts?.Dispose(); }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "释放 task CTS 失败");
+                }
             }
             _disposed = true;
         }
