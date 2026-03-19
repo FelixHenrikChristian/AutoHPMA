@@ -79,7 +79,6 @@ public class GameTaskManager : IGameTaskManager
         lock (_syncRoot)
         {
             taskToStop = _currentTask;
-            _currentTask = null;
         }
 
         if (taskToStop == null)
@@ -89,16 +88,12 @@ public class GameTaskManager : IGameTaskManager
 
         try
         {
-            taskToStop.TaskCompleted -= OnTaskCompleted;
             taskToStop.Stop();
-            taskToStop.Dispose();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "停止任务失败");
         }
-
-        TaskStopped?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnTaskCompleted(object? sender, EventArgs e)

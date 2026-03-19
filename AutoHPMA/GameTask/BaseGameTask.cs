@@ -49,6 +49,7 @@ namespace AutoHPMA.GameTask
         // 操作级别的取消令牌，用于在状态变化时立即取消当前操作
         private CancellationTokenSource? _operationCts;
         private readonly object _operationCtsLock = new object();
+        private int _taskCompletedNotified;
 
         public event EventHandler? TaskCompleted;
 
@@ -449,7 +450,14 @@ namespace AutoHPMA.GameTask
         public virtual void Stop()
         {
             _cts.Cancel();
-            TaskCompleted?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void NotifyTaskCompletedOnce()
+        {
+            if (Interlocked.Exchange(ref _taskCompletedNotified, 1) == 0)
+            {
+                TaskCompleted?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         /// <summary>
@@ -480,6 +488,7 @@ namespace AutoHPMA.GameTask
         /// <param name="taskName">任务名称（用于日志显示）</param>
         protected async Task RunTaskAsync(string taskName)
         {
+            Interlocked.Exchange(ref _taskCompletedNotified, 0);
             _logWindow?.SetGameState(taskName);
             _logger.LogInformation("[Aquamarine]---{TaskName}任务已启动---[/Aquamarine]", taskName);
 
@@ -514,8 +523,7 @@ namespace AutoHPMA.GameTask
                 _maskWindow?.ClearAll();
                 _logWindow?.SetGameState("空闲");
                 _hasWaitedForInitialState = false;
-                _cts.Dispose();
-                _cts = new CancellationTokenSource();
+                NotifyTaskCompletedOnce();
             }
         }
 
