@@ -8,6 +8,7 @@ using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.CaptureHelper;
 using AutoHPMA.Messages;
 using AutoHPMA.Services;
+using AutoHPMA.Services.Interface;
 using AutoHPMA.Views.Windows;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,7 @@ namespace AutoHPMA.ViewModels.Pages
 
         private readonly AppSettings _settings;
         private readonly ILogger<DashboardViewModel> _logger;
+        private readonly IAppContextService _appContextService;
         private DispatcherTimer _syncWindowTimer;
 
         #endregion
@@ -66,32 +68,32 @@ namespace AutoHPMA.ViewModels.Pages
 
         private LogWindow? _logWindow
         {
-            get => AppContextService.Instance.LogWindow;
-            set => AppContextService.Instance.LogWindow = value;
+            get => _appContextService.LogWindow;
+            set => _appContextService.LogWindow = value;
         }
 
         private MaskWindow? _maskWindow
         {
-            get => AppContextService.Instance.MaskWindow;
-            set => AppContextService.Instance.MaskWindow = value;
+            get => _appContextService.MaskWindow;
+            set => _appContextService.MaskWindow = value;
         }
 
         private WindowsGraphicsCapture _capture
         {
-            get => AppContextService.Instance.Capture;
-            set => AppContextService.Instance.Capture = value;
+            get => _appContextService.Capture;
+            set => _appContextService.Capture = value;
         }
 
         private IntPtr _displayHwnd
         {
-            get => AppContextService.Instance.DisplayHwnd;
-            set => AppContextService.Instance.DisplayHwnd = value;
+            get => _appContextService.DisplayHwnd;
+            set => _appContextService.DisplayHwnd = value;
         }
 
         private IntPtr _gameHwnd
         {
-            get => AppContextService.Instance.GameHwnd;
-            set => AppContextService.Instance.GameHwnd = value;
+            get => _appContextService.GameHwnd;
+            set => _appContextService.GameHwnd = value;
         }
 
         #endregion
@@ -105,10 +107,14 @@ namespace AutoHPMA.ViewModels.Pages
 
         #region 构造函数
 
-        public DashboardViewModel(AppSettings settings, ILogger<DashboardViewModel> logger)
+        public DashboardViewModel(
+            AppSettings settings,
+            ILogger<DashboardViewModel> logger,
+            IAppContextService appContextService)
         {
             _settings = settings;
             _logger = logger;
+            _appContextService = appContextService;
             LoadSettings();
         }
 
@@ -123,7 +129,7 @@ namespace AutoHPMA.ViewModels.Pages
             SelectedOcrEngine = _settings.SelectedOCR;
             
             // 初始化AppContextService中的共享配置
-            AppContextService.Instance.StateMonitorInterval = _settings.StateMonitorInterval;
+            _appContextService.StateMonitorInterval = _settings.StateMonitorInterval;
         }
 
         #endregion
@@ -272,8 +278,6 @@ namespace AutoHPMA.ViewModels.Pages
 
             _capture?.Stop();
             _capture = null;
-
-            GC.Collect();
         }
 
         [RelayCommand]
