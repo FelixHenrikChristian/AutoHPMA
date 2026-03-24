@@ -9,6 +9,10 @@ namespace AutoHPMA.Helpers;
 /// <summary>
 /// 覆盖窗口相关的 Win32 API 和工具方法
 /// </summary>
+/// <remarks>
+/// 注意：GetWindowPosition 使用 DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)
+/// 而非 GetWindowRect，以排除 DWM 不可见阴影边框，与 WindowsGraphicsCapture 的坐标系一致。
+/// </remarks>
 public static class NativeWindowHelper
 {
     #region Win32 常量
@@ -21,6 +25,8 @@ public static class NativeWindowHelper
     private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_NOSIZE = 0x0001;
     private const uint SWP_NOACTIVATE = 0x0010;
+
+    private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
 
     #endregion
 
@@ -38,6 +44,9 @@ public static class NativeWindowHelper
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
@@ -91,12 +100,23 @@ public static class NativeWindowHelper
     /// <summary>
     /// 获取目标窗口的位置（经过 DPI 缩放）
     /// </summary>
+    /// <remarks>
+    /// 使用 DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS) 获取不含 DWM 不可见阴影边框的窗口矩形，
+    /// 与 WindowsGraphicsCapture.GetGameScreenRegion 使用的坐标系一致，避免 MaskWindow 绘制偏移。
+    /// </remarks>
     public static bool GetWindowPosition(IntPtr targetHwnd, Visual referenceVisual, out double left, out double top, out double width, out double height)
     {
         left = top = width = height = 0;
-        
-        if (!GetWindowRect(targetHwnd, out RECT rect))
-            return false;
+
+        // 优先使用 DwmGetWindowAttribute 获取不含阴影边框的窗口矩形
+        RECT rect;
+        int hr = DwmGetWindowAttribute(targetHwnd, DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf<RECT>());
+        if (hr != 0)
+        {
+            // DWM 不可用时 fallback 到 GetWindowRect
+            if (!GetWindowRect(targetHwnd, out rect))
+                return false;
+        }
 
         var (dpiX, dpiY) = GetDpiScale(referenceVisual);
         left = rect.Left * dpiX;
