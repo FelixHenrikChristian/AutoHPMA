@@ -38,6 +38,7 @@ public class AutoSweetAdventure : BaseGameTask
         LoadAssets();
         CalOffset();
         InitStateRules();
+        _unknownBufferMs = 5000;
     }
 
 
@@ -68,7 +69,7 @@ public class AutoSweetAdventure : BaseGameTask
     {
         _state = newState;
         if (newState != AutoSweetAdventureState.Unknown)
-            _waited = false;
+            ResetUnknownBuffer();
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -77,13 +78,11 @@ public class AutoSweetAdventure : BaseGameTask
         switch (_state)
         {
             case AutoSweetAdventureState.Unknown:
-                if (!_waited)
+                if (!IsUnknownBufferElapsed())
                 {
-                    await Task.Delay(5000, _cts.Token);
-                    _waited = true;
+                    await Task.Delay(1000, _cts.Token);
                     return;
                 }
-                _waited = false;
                 await Task.Delay(1000, _cts.Token);
                 break;
 

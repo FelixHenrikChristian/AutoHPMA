@@ -96,6 +96,7 @@ public class AutoCooking : BaseGameTask
         LoadAssets();
         CalOffset();
         InitStateRules();
+        _unknownBufferMs = 2000;
     }
 
     private void InitStateRules()
@@ -132,7 +133,7 @@ public class AutoCooking : BaseGameTask
         }
         _state = newState;
         if (newState != AutoCookingState.Unknown)
-            _waited = false;
+            ResetUnknownBuffer();
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -148,13 +149,11 @@ public class AutoCooking : BaseGameTask
         switch (_state)
         {
             case AutoCookingState.Unknown:
-                if (!_waited)
+                if (!IsUnknownBufferElapsed())
                 {
-                    await Task.Delay(2000, _cts.Token);
-                    _waited = true;
+                    await Task.Delay(1000, _cts.Token);
                     return;
                 }
-                _waited = false;
                 _logger.LogInformation("状态未知，请手动进入烹饪界面。");
                 await Task.Delay(1000, _cts.Token);
                 break;

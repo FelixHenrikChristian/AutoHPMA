@@ -48,6 +48,7 @@ public class AutoForbiddenForest : BaseGameTask
         LoadAssets();
         CalOffset();
         InitStateRules();
+        _unknownBufferMs = 5000;
     }
 
 
@@ -83,7 +84,7 @@ public class AutoForbiddenForest : BaseGameTask
     {
         _state = newState;
         if (newState != AutoForbiddenForestState.Unknown)
-            _waited = false;
+            ResetUnknownBuffer();
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -99,13 +100,11 @@ public class AutoForbiddenForest : BaseGameTask
         switch (_state)
         {
             case AutoForbiddenForestState.Unknown:
-                if (!_waited)
+                if (!IsUnknownBufferElapsed())
                 {
-                    await Task.Delay(5000, _cts.Token);
-                    _waited = true;
+                    await Task.Delay(1000, _cts.Token);
                     return;
                 }
-                _waited = false;
                 await Task.Delay(1000, _cts.Token);
                 break;
 

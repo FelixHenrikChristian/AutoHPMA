@@ -75,6 +75,7 @@ public class AutoClubQuiz : BaseGameTask
         LoadAssets();
         CalOffset();
         InitStateRules();
+        _unknownBufferMs = 3000;
     }
 
     private void InitStateRules()
@@ -110,7 +111,7 @@ public class AutoClubQuiz : BaseGameTask
     {
         _state = newState;
         if (newState != AutoClubQuizState.Unknown)
-            _waited = false;
+            ResetUnknownBuffer();
     }
 
     protected override async Task ExecuteLoopAsync()
@@ -161,15 +162,13 @@ public class AutoClubQuiz : BaseGameTask
 
     private async Task HandleUnknownState()
     {
-        if (!_waited)
+        if (!IsUnknownBufferElapsed())
         {
             _logWindow?.SetGameState("社团答题-等待加载");
-            await Task.Delay(3000, _cts.Token);
-            _waited = true;
+            await Task.Delay(1000, _cts.Token);
             return;
         }
-        // 已等待过，执行操作进入地图
-        _waited = false;
+        // 缓冲期已过，执行操作进入地图
         await SendESCAsync();
         await Task.Delay(2000, _cts.Token);
         await WindowInteractionHelper.SendKeyAsync(_gameHwnd, 0x4D); // M键打开地图

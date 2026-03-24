@@ -93,7 +93,8 @@ namespace AutoHPMA.GameTask
         protected int offsetX, offsetY;
         protected double scale;
         protected CancellationTokenSource _cts;
-        protected bool _waited = false;
+        private DateTime? _unknownStateSince = null;
+        protected int _unknownBufferMs = 3000;
         protected Dictionary<string, Mat> _images = new();
 
         // 状态监测任务
@@ -562,6 +563,32 @@ namespace AutoHPMA.GameTask
 
         #endregion
 
+        #region Unknown 状态缓冲
+
+        /// <summary>
+        /// 判断 Unknown 状态的缓冲期是否已过。
+        /// 首次调用时记录时间戳并返回 false；后续调用若已超过 _unknownBufferMs 则返回 true。
+        /// </summary>
+        protected bool IsUnknownBufferElapsed()
+        {
+            if (_unknownStateSince == null)
+            {
+                _unknownStateSince = DateTime.UtcNow;
+                return false;
+            }
+            return (DateTime.UtcNow - _unknownStateSince.Value).TotalMilliseconds >= _unknownBufferMs;
+        }
+
+        /// <summary>
+        /// 重置 Unknown 状态的缓冲计时器。在状态从 Unknown 变为已知状态时调用。
+        /// </summary>
+        protected void ResetUnknownBuffer()
+        {
+            _unknownStateSince = null;
+        }
+
+        #endregion
+
         #region 状态监测
 
         /// <summary>
@@ -669,7 +696,7 @@ namespace AutoHPMA.GameTask
                 _logger.LogInformation("[Aquamarine]---{TaskName}任务已终止---[/Aquamarine]", taskName);
                 _maskWindow?.ClearAll();
                 _logWindow?.SetGameState("空闲");
-                _waited = false;
+                ResetUnknownBuffer();
                 _cts.Dispose();
                 _cts = new CancellationTokenSource();
             }
