@@ -15,8 +15,8 @@ namespace AutoHPMA.Services
     public class UpdateService : IUpdateService
     {
         private readonly ILogger<UpdateService> _logger;
-        private const string GitHubApiUrl = "https://api.github.com/repos/FelixChristian011226/AutoHPMA/releases/latest";
-        private const string DownloadPageUrl = "https://github.com/FelixChristian011226/AutoHPMA/releases/latest";
+        private const string GitHubApiUrl = "https://api.github.com/repos/FelixHenrikChristian/AutoHPMA/releases/latest";
+        private const string DownloadPageUrl = "https://github.com/FelixHenrikChristian/AutoHPMA/releases/latest";
 
         public UpdateService(ILogger<UpdateService> logger)
         {
@@ -27,14 +27,6 @@ namespace AutoHPMA.Services
         {
             try
             {
-#if DEBUG
-                // 在调试模式下跳过更新检查
-                if (option.Trigger == UpdateTrigger.Manual)
-                {
-                    await ShowMessageBoxAsync("调试模式", "调试模式下不检查更新");
-                }
-                return;
-#endif
 
                 var latestRelease = await GetLatestReleaseAsync();
                 if (latestRelease == null)

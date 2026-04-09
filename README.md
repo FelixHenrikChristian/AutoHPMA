@@ -2,7 +2,7 @@
 
 <div align=center>
   <h1 align="center">
-  <img src="https://github.com/FelixChristian011226/AutoHPMA/blob/master/AutoHPMA/Assets/hpma.png" width=50%>
+  <img src="https://github.com/FelixHenrikChristian/AutoHPMA/blob/master/AutoHPMA/Assets/hpma.png" width=50%>
   <br/>
   <a href="https://autohpma.top">AutoHPMA</a>
   </h1>
@@ -10,10 +10,10 @@
 
 <div align=center>
   <img src="https://img.shields.io/badge/build-passing-brightgreen">
-  <img src="https://img.shields.io/github/v/release/FelixChristian011226/AutoHPMA">
-  <img src="https://img.shields.io/github/license/FelixChristian011226/AutoHPMA">
-  <img src="https://img.shields.io/github/downloads/FelixChristian011226/AutoHPMA/total">
-  <img src="https://img.shields.io/github/stars/FelixChristian011226/AutoHPMA">
+  <img src="https://img.shields.io/github/v/release/FelixHenrikChristian/AutoHPMA">
+  <img src="https://img.shields.io/github/license/FelixHenrikChristian/AutoHPMA">
+  <img src="https://img.shields.io/github/downloads/FelixHenrikChristian/AutoHPMA/total">
+  <img src="https://img.shields.io/github/stars/FelixHenrikChristian/AutoHPMA">
 </div>
 
 <br>
@@ -48,7 +48,7 @@
 
 ### 安装步骤
 
-1. 前往[Releases](https://github.com/FelixChristian011226/AutoHPMA/releases)获取最新发布版本。
+1. 前往[Releases](https://github.com/FelixHenrikChristian/AutoHPMA/releases)获取最新发布版本。
 2. 下载并双击 `AutoHPMA-Setup.exe` 启动安装程序。
 3. 按提示完成安装，可自定义安装路径和开机启动设置。
 4. 若首次启动提示缺少 .NET 运行时，请前往 [Microsoft .NET 官网](https://dotnet.microsoft.com/download) 安装对应版本。
@@ -82,5 +82,5 @@
 
 ## 许可证
 
-本项目根据 [GPL-3.0 许可证](https://github.com/FelixChristian011226/AutoHPMA/blob/master/LICENSE) 授权发布 - 有关详情，请参阅 LICENSE 文件。
+本项目根据 [GPL-3.0 许可证](https://github.com/FelixHenrikChristian/AutoHPMA/blob/master/LICENSE) 授权发布 - 有关详情，请参阅 LICENSE 文件。
 

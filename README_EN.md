@@ -2,7 +2,7 @@
 
 <div align=center>
   <h1 align="center">
-  <img src="https://github.com/FelixChristian011226/AutoHPMA/blob/master/AutoHPMA/Assets/hpma.png" width=50%>
+  <img src="https://github.com/FelixHenrikChristian/AutoHPMA/blob/master/AutoHPMA/Assets/hpma.png" width=50%>
   <br/>
   <a href="https://autohpma.top">AutoHPMA</a>
   </h1>
@@ -10,10 +10,10 @@
 
 <div align=center>
   <img src="https://img.shields.io/badge/build-passing-brightgreen">
-  <img src="https://img.shields.io/github/v/release/FelixChristian011226/AutoHPMA">
-  <img src="https://img.shields.io/github/license/FelixChristian011226/AutoHPMA">
-  <img src="https://img.shields.io/github/downloads/FelixChristian011226/AutoHPMA/total">
-  <img src="https://img.shields.io/github/stars/FelixChristian011226/AutoHPMA">
+  <img src="https://img.shields.io/github/v/release/FelixHenrikChristian/AutoHPMA">
+  <img src="https://img.shields.io/github/license/FelixHenrikChristian/AutoHPMA">
+  <img src="https://img.shields.io/github/downloads/FelixHenrikChristian/AutoHPMA/total">
+  <img src="https://img.shields.io/github/stars/FelixHenrikChristian/AutoHPMA">
 </div>
 
 <br>
@@ -51,7 +51,7 @@
 
 ### Steps
 
-1. Go to [Releases](https://github.com/FelixChristian011226/AutoHPMA/releases) to download the latest version.
+1. Go to [Releases](https://github.com/FelixHenrikChristian/AutoHPMA/releases) to download the latest version.
 2. Download and run `AutoHPMA-Setup.exe` to start the installer.
 3. Follow the prompts to complete installation. You can customize the installation path and startup settings.
 4. If prompted about missing .NET runtime on first launch, download it from [Microsoft .NET](https://dotnet.microsoft.com/download).
@@ -85,4 +85,4 @@ Feedback and contributions are welcome! If you have suggestions for improving Au
 
 ## License
 
-This project is licensed under the [GPL-3.0 License](https://github.com/FelixChristian011226/AutoHPMA/blob/master/LICENSE) - see the LICENSE file for details.
+This project is licensed under the [GPL-3.0 License](https://github.com/FelixHenrikChristian/AutoHPMA/blob/master/LICENSE) - see the LICENSE file for details.

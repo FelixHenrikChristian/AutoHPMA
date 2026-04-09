@@ -229,7 +229,7 @@
                                               VerticalAlignment="Center"/>
                             </StackPanel>
                             <ui:TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Hyperlink NavigateUri="https://github.com/FelixChristian011226"
+                                <Hyperlink NavigateUri="https://github.com/FelixHenrikChristian"
                                            RequestNavigate="Hyperlink_RequestNavigate"
                                            TextDecorations="None">
                                     <Run Text="Felix Christian" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
@@ -252,7 +252,7 @@
                                               VerticalAlignment="Center"/>
                             </StackPanel>
                             <ui:TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Hyperlink NavigateUri="https://github.com/FelixChristian011226/AutoHPMA"
+                            <Hyperlink NavigateUri="https://github.com/FelixHenrikChristian/AutoHPMA"
                                            RequestNavigate="Hyperlink_RequestNavigate"
                                            TextDecorations="None">
                                     <Run Text="GitHub" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
@@ -298,7 +298,7 @@
                                               VerticalAlignment="Center"/>
                             </StackPanel>
                             <ui:TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Hyperlink NavigateUri="https://github.com/FelixChristian011226/AutoHPMA/issues"
+                            <Hyperlink NavigateUri="https://github.com/FelixHenrikChristian/AutoHPMA/issues"
                                            RequestNavigate="Hyperlink_RequestNavigate"
                                            TextDecorations="None">
                                     <Run Text="提交 Issue" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
