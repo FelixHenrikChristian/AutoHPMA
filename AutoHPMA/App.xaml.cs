@@ -23,6 +23,7 @@ using System.Windows.Threading;
 using Wpf.Ui;
 using Wpf.Ui.DependencyInjection;
 using AutoHPMA.Config;
+using AutoHPMA.Helpers;
 using AutoHPMA.Helpers.LogHelper;
 
 namespace AutoHPMA
@@ -117,6 +118,9 @@ namespace AutoHPMA
         {
             await _host.StartAsync();
 
+            var appSettings = _host.Services.GetRequiredService<AppSettings>();
+            PowerSaveHelper.SetPreventSleepWhileRunning(appSettings.PreventSleepWhileRunning);
+
             // 检查是否显示过使用条款
             var settings = AppSettings.Load();
             if (!settings.HasShownTermsOfUse)
@@ -152,6 +156,8 @@ namespace AutoHPMA
         /// </summary>
         private async void OnExit(object sender, ExitEventArgs e)
         {
+            PowerSaveHelper.SetPreventSleepWhileRunning(false);
+
             await _host.StopAsync();
 
             _host.Dispose();

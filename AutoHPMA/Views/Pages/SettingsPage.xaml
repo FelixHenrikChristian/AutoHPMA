@@ -49,6 +49,38 @@
                           DisplayMemberPath="Name"/>
             </ui:CardControl>
 
+            <!-- 阻止休眠 -->
+            <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Desktop24}">
+                <ui:CardControl.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      FontTypography="Body"
+                                      Text="阻止休眠"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="0"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="开启后，在程序运行期间推迟显示器关闭与因空闲触发的系统睡眠"
+                                      TextWrapping="Wrap" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="1"
+                                         Margin="12,0,0,0"
+                                         VerticalAlignment="Center"
+                                         IsChecked="{Binding ViewModel.PreventSleepWhileRunning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                </ui:CardControl.Header>
+            </ui:CardControl>
+
             <!-- 恢复设置 -->
             <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowReset24}">
                 <ui:CardControl.Header>

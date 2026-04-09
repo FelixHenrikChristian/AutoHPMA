@@ -4,6 +4,7 @@
 // All Rights Reserved.
 
 using AutoHPMA.Config;
+using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 using AutoHPMA.Services.Interface;
 using Microsoft.Win32;
@@ -35,6 +36,9 @@ namespace AutoHPMA.ViewModels.Pages
         private int _logFileLimit = 10;
 
         [ObservableProperty]
+        private bool _preventSleepWhileRunning;
+
+        [ObservableProperty]
         private bool _isCheckingUpdate = false;
 
         public class ThemeOption
@@ -57,6 +61,7 @@ namespace AutoHPMA.ViewModels.Pages
             _settings = settings;
             _updateService = updateService;
             LogFileLimit = _settings.LogFileLimit;
+            PreventSleepWhileRunning = _settings.PreventSleepWhileRunning;
             
             // Subscribe to theme changes to handle "follow system" mode
             ApplicationThemeManager.Changed += OnApplicationThemeChanged;
@@ -197,6 +202,13 @@ namespace AutoHPMA.ViewModels.Pages
         {
             _settings.LogFileLimit = value;
             _settings.Save();
+        }
+
+        partial void OnPreventSleepWhileRunningChanged(bool value)
+        {
+            _settings.PreventSleepWhileRunning = value;
+            _settings.Save();
+            PowerSaveHelper.SetPreventSleepWhileRunning(value);
         }
 
         [RelayCommand]
