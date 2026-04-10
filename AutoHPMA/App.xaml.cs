@@ -122,31 +122,19 @@ namespace AutoHPMA
             PowerSaveHelper.SetPreventSleepWhileRunning(appSettings.PreventSleepWhileRunning);
 
             // 检查是否显示过使用条款
-            var settings = AppSettings.Load();
-            if (!settings.HasShownTermsOfUse)
+            if (!appSettings.HasShownTermsOfUse)
             {
-                var uiMessageBox = new Wpf.Ui.Controls.MessageBox
+                var termsWindow = new TermsOfUseWindow();
+                var accepted = termsWindow.ShowDialog() == true;
+                if (accepted)
                 {
-                    Title = "使用条款",
-                    Content =
-                    "1. 本软件免费开源，仅供学习和研究使用，旨在为学术和研究人员提供参考和资料，任何其他目的均不适用。\n\n" +
-                    "2. 严禁将本软件用于任何商业或非法用途。对于因违反此规定而产生的任何法律后果，用户需自行承担全部责任。\n\n" +
-                    "3. 软件目录下的所有资源信息均来源于网络。如有关于版权的争议或问题，请联系原作者或权利人。\n\n" +
-                    "4. 由于用户计算机软硬件环境的差异性和复杂性，本软件所提供的各项功能并不能保证在任何情况下都能正常执行或达到用户所期望的结果。 用户使用本软件所产生的一切后果，软件作者不承担任何责任。\n\n" +
-                    "点击确定表示您同意以上条款。",
-                    PrimaryButtonText = "确定",
-                    CloseButtonText = "退出",
-                };
-
-                var result = await uiMessageBox.ShowDialogAsync();
-                if(result == Wpf.Ui.Controls.MessageBoxResult.Primary)
-                {
-                    settings.HasShownTermsOfUse = true;
-                    settings.Save();
+                    appSettings.HasShownTermsOfUse = true;
+                    appSettings.Save();
                 }
                 else
                 {
                     Application.Current.Shutdown();
+                    return;
                 }
             }
         }

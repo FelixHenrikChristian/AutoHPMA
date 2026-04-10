@@ -68,7 +68,7 @@ namespace AutoHPMA.Config
         public string Theme { get; set; } = "System";
 
         [JsonPropertyName("preventSleepWhileRunning")]
-        public bool PreventSleepWhileRunning { get; set; } = false;
+        public bool PreventSleepWhileRunning { get; set; } = true;
 
         [JsonPropertyName("language")]
         public string Language { get; set; } = "zh-CN";
