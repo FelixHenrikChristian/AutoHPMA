@@ -1,0 +1,58 @@
+# Visual Studio / .NET
+.vs/
+**/.vs/
+[Bb]in/
+**/[Bb]in/
+[Oo]bj/
+**/[Oo]bj/
+
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results / logs
+*.log
+
+# NuGet
+packages/
+**/packages/
+*.nupkg
+*.snupkg
+
+# Test results
+TestResults/
+**/TestResults/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# WinUI 3 / Windows App SDK / MSIX packaging outputs
+**/AppPackages/
+**/AppPackages/*
+**/BundleArtifacts/
+**/BundleArtifacts/*
+
+*.appx
+*.appxbundle
+*.appxupload
+*.msix
+*.msixbundle
+*.msixupload
+
+# Generated packaging artifacts
+**/Generated Files/
+**/Generated Files/*
+
+# Store association (often machine-specific)
+Package.StoreAssociation.xml
+
+# Publish outputs
+**/publish/
+**/PublishProfiles/*.pubxml.user
+

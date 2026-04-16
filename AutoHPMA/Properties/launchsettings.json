@@ -1,0 +1,10 @@
+﻿{
+    "profiles": {
+      "AutoHPMA (Package)": {
+        "commandName": "MsixPackage"
+      },
+      "AutoHPMA (Unpackaged)": {
+        "commandName": "Project"
+      }
+    }
+}
