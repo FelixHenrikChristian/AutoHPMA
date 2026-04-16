@@ -24,11 +24,13 @@
 
         <!-- 标题栏仅保留窗口控制；主标题在正文区放大，避免与「欢迎使用」字号倒挂 -->
 
-        <ScrollViewer Grid.Row="1"
+        <ScrollViewer x:Name="TermsScrollViewer"
+                      Grid.Row="1"
                       Margin="24,8,10,8"
                       Padding="0,0,14,0"
                       VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
+                      HorizontalScrollBarVisibility="Disabled"
+                      ScrollChanged="TermsScrollViewer_ScrollChanged">
             <StackPanel>
                 <ui:TextBlock FontTypography="Title"
                               Text="使用条款"
@@ -174,16 +176,30 @@
                 Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Margin="24,12">
-                <ui:Button Content="退出"
-                           Margin="0,0,8,0"
-                           Click="ExitButton_Click" />
-                <ui:Button Appearance="Primary"
-                           Content="同意并继续"
-                           Icon="{ui:SymbolIcon Checkmark24}"
-                           Click="AgreeButton_Click" />
+            <StackPanel Margin="24,12">
+                <ui:InfoBar x:Name="ReadToEndInfoBar"
+                            Title="提示"
+                            Message="请仔细阅读使用条款。"
+                            Severity="Informational"
+                            IsOpen="False"
+                            IsClosable="True"
+                            Margin="0,0,0,10" />
+
+                <!-- 允许捕获“点到被禁用按钮区域”的意图，但不改变按钮禁用状态 -->
+                <Grid PreviewMouseLeftButtonDown="BottomBar_PreviewMouseLeftButtonDown">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <ui:Button Content="退出"
+                                   Margin="0,0,8,0"
+                                   Click="ExitButton_Click" />
+                        <ui:Button x:Name="AgreeButton"
+                                   Appearance="Primary"
+                                   Content="同意并继续"
+                                   Icon="{ui:SymbolIcon Checkmark24}"
+                                   IsEnabled="False"
+                                   Click="AgreeButton_Click" />
+                    </StackPanel>
+                </Grid>
             </StackPanel>
         </Border>
     </Grid>
