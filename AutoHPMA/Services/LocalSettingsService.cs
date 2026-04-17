@@ -1,4 +1,6 @@
-﻿using AutoHPMA.Contracts.Services;
+﻿using System.Linq;
+
+using AutoHPMA.Contracts.Services;
 using AutoHPMA.Core.Contracts.Services;
 using AutoHPMA.Core.Helpers;
 using AutoHPMA.Helpers;
@@ -84,5 +86,25 @@ public class LocalSettingsService : ILocalSettingsService
 
             await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
         }
+    }
+
+    public async Task ResetAllAsync()
+    {
+        if (RuntimeHelper.IsMSIX)
+        {
+            var values = ApplicationData.Current.LocalSettings.Values;
+            foreach (var key in values.Keys.ToList())
+            {
+                values.Remove(key);
+            }
+        }
+        else
+        {
+            await InitializeAsync();
+            _fileService.Delete(_applicationDataFolder, _localsettingsFile);
+            _settings = new Dictionary<string, object>();
+        }
+
+        await Task.CompletedTask;
     }
 }
