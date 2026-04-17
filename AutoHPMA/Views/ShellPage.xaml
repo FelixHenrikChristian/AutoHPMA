@@ -5,8 +5,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:AutoHPMA.Helpers"
-    xmlns:behaviors="using:AutoHPMA.Behaviors"
-    xmlns:i="using:Microsoft.Xaml.Interactivity"
     Loaded="OnLoaded">
 
     <Grid>
@@ -35,8 +33,7 @@
             PaneDisplayMode="Left"
             OpenPaneLength="120"
             ExpandedModeThresholdWidth="1280"
-            DisplayModeChanged="NavigationViewControl_DisplayModeChanged"
-            Header="{x:Bind ((ContentControl)ViewModel.Selected).Content, Mode=OneWay}">
+            DisplayModeChanged="NavigationViewControl_DisplayModeChanged">
             <NavigationView.MenuItems>
                 <!--
                 TODO: Update item titles by updating <x:Uid>.Content entries in Strings/en-us/Resources.resw.
@@ -76,29 +73,6 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <NavigationView.HeaderTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <TextBlock
-                            Text="{Binding}"
-                            Style="{ThemeResource TitleTextBlockStyle}" />
-                    </Grid>
-                </DataTemplate>
-            </NavigationView.HeaderTemplate>
-            <i:Interaction.Behaviors>
-                <behaviors:NavigationViewHeaderBehavior
-                    DefaultHeader="{x:Bind ((ContentControl)ViewModel.Selected).Content, Mode=OneWay}">
-                    <behaviors:NavigationViewHeaderBehavior.DefaultHeaderTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <TextBlock
-                                    Text="{Binding}"
-                                    Style="{ThemeResource TitleTextBlockStyle}" />
-                            </Grid>
-                        </DataTemplate>
-                    </behaviors:NavigationViewHeaderBehavior.DefaultHeaderTemplate>
-                </behaviors:NavigationViewHeaderBehavior>
-            </i:Interaction.Behaviors>
             <Grid Margin="{StaticResource NavigationViewPageContentMargin}">
                 <Frame x:Name="NavigationFrame" />
             </Grid>
