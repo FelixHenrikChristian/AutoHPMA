@@ -14,7 +14,12 @@ public class PageService : IPageService
 
     public PageService()
     {
-        Configure<MainViewModel, MainPage>();
+        Configure<HomeViewModel, HomePage>();
+        Configure<TaskViewModel, TaskPage>();
+        Configure<LogViewModel, LogPage>();
+        Configure<TestViewModel, TestPage>();
+        Configure<HotkeySettingsViewModel, HotkeySettingsPage>();
+        Configure<NotificationSettingsViewModel, NotificationSettingsPage>();
         Configure<SettingsViewModel, SettingsPage>();
     }
 

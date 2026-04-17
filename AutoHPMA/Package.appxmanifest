@@ -12,14 +12,14 @@
 
   <Identity
     Name="eb9d2aab-42a4-4671-a8c2-086ca6c8187f"
-    Publisher="CN=wangyuefei"
+    Publisher="CN=FelixChristian"
     Version="1.0.0.0" />
     
   <mp:PhoneIdentity PhoneProductId="eb9d2aab-42a4-4671-a8c2-086ca6c8187f" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
     
   <Properties>
     <DisplayName>AutoHPMA</DisplayName>
-    <PublisherDisplayName>wangyuefei</PublisherDisplayName>
+    <PublisherDisplayName>FelixChristian</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 

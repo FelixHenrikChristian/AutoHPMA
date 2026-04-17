@@ -71,8 +71,18 @@ public partial class App : Application
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<SettingsPage>();
-            services.AddTransient<MainViewModel>();
-            services.AddTransient<MainPage>();
+            services.AddTransient<HomeViewModel>();
+            services.AddTransient<HomePage>();
+            services.AddTransient<TaskViewModel>();
+            services.AddTransient<TaskPage>();
+            services.AddTransient<LogViewModel>();
+            services.AddTransient<LogPage>();
+            services.AddTransient<TestViewModel>();
+            services.AddTransient<TestPage>();
+            services.AddTransient<HotkeySettingsViewModel>();
+            services.AddTransient<HotkeySettingsPage>();
+            services.AddTransient<NotificationSettingsViewModel>();
+            services.AddTransient<NotificationSettingsPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
 
