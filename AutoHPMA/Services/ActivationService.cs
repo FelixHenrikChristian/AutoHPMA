@@ -1,5 +1,7 @@
 ﻿using AutoHPMA.Activation;
+using AutoHPMA.Configuration;
 using AutoHPMA.Contracts.Services;
+using AutoHPMA.Helpers;
 using AutoHPMA.Views;
 
 using Microsoft.UI.Xaml;
@@ -12,13 +14,19 @@ public class ActivationService : IActivationService
     private readonly ActivationHandler<LaunchActivatedEventArgs> _defaultHandler;
     private readonly IEnumerable<IActivationHandler> _activationHandlers;
     private readonly IThemeSelectorService _themeSelectorService;
+    private readonly ILocalSettingsService _localSettingsService;
     private UIElement? _shell = null;
 
-    public ActivationService(ActivationHandler<LaunchActivatedEventArgs> defaultHandler, IEnumerable<IActivationHandler> activationHandlers, IThemeSelectorService themeSelectorService)
+    public ActivationService(
+        ActivationHandler<LaunchActivatedEventArgs> defaultHandler,
+        IEnumerable<IActivationHandler> activationHandlers,
+        IThemeSelectorService themeSelectorService,
+        ILocalSettingsService localSettingsService)
     {
         _defaultHandler = defaultHandler;
         _activationHandlers = activationHandlers;
         _themeSelectorService = themeSelectorService;
+        _localSettingsService = localSettingsService;
     }
 
     public async Task ActivateAsync(object activationArgs)
@@ -67,6 +75,10 @@ public class ActivationService : IActivationService
     private async Task StartupAsync()
     {
         await _themeSelectorService.SetRequestedThemeAsync();
+
+        var preventSleep = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.PreventSleepWhileRunning);
+        PowerSaveHelper.SetPreventSleepWhileRunning(preventSleep ?? true);
+
         await Task.CompletedTask;
     }
 }
