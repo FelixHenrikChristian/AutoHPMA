@@ -138,7 +138,6 @@ public partial class SettingsViewModel : ObservableRecipient
         IsCheckingUpdate = true;
         try
         {
-            // UpdateService 内尚未接界面提示，用户侧无弹窗反馈。
             await _updateService.CheckUpdateAsync(new UpdateOption { Trigger = UpdateTrigger.Manual });
         }
         finally
