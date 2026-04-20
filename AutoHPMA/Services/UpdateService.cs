@@ -10,6 +10,7 @@ using AutoHPMA.Views;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 using Windows.ApplicationModel;
 
@@ -23,6 +24,7 @@ public class UpdateService : IUpdateService
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
     private readonly ILogger<UpdateService> _logger;
+    private readonly IInfoBarNotificationService _infoBar;
 
     private static HttpClient CreateHttpClient()
     {
@@ -31,9 +33,10 @@ public class UpdateService : IUpdateService
         return client;
     }
 
-    public UpdateService(ILogger<UpdateService> logger)
+    public UpdateService(ILogger<UpdateService> logger, IInfoBarNotificationService infoBar)
     {
         _logger = logger;
+        _infoBar = infoBar;
     }
 
     public async Task CheckUpdateAsync(UpdateOption option)
@@ -43,7 +46,14 @@ public class UpdateService : IUpdateService
             var latestRelease = await GetLatestReleaseAsync();
             if (latestRelease == null)
             {
-                // TODO: 无法获取版本信息时弹出 Snackbar（手动检查时提示）
+                if (option.Trigger == UpdateTrigger.Manual)
+                {
+                    _infoBar.Show(
+                        InfoBarSeverity.Warning,
+                        "检查更新",
+                        "无法获取最新版本信息，请稍后再试。");
+                }
+
                 return;
             }
 
@@ -53,7 +63,14 @@ public class UpdateService : IUpdateService
 
             if (latestVersion <= currentVersion)
             {
-                // TODO: 已是最新版本时弹出 Snackbar（手动检查时提示）
+                if (option.Trigger == UpdateTrigger.Manual)
+                {
+                    _infoBar.Show(
+                        InfoBarSeverity.Success,
+                        "已是最新版本",
+                        "当前已安装最新版本。");
+                }
+
                 return;
             }
 
@@ -62,7 +79,13 @@ public class UpdateService : IUpdateService
         catch (Exception ex)
         {
             _logger.LogError(ex, "检查更新时发生错误");
-            // TODO: 手动检查异常时弹出 Snackbar
+            if (option.Trigger == UpdateTrigger.Manual)
+            {
+                _infoBar.Show(
+                    InfoBarSeverity.Error,
+                    "检查更新失败",
+                    "请检查网络连接后重试。");
+            }
         }
     }
 
@@ -134,8 +157,10 @@ public class UpdateService : IUpdateService
             var updaterExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AutoHPMA.update.exe");
             if (!File.Exists(updaterExePath))
             {
-                // TODO: 更新程序不存在时提示用户（Snackbar 等）
-                OpenDownloadPage();
+                _infoBar.Show(
+                    InfoBarSeverity.Warning,
+                    "无法启动更新",
+                    "未找到更新程序。");
                 return Task.CompletedTask;
             }
 
@@ -150,8 +175,10 @@ public class UpdateService : IUpdateService
         catch (Exception ex)
         {
             _logger.LogError(ex, "启动更新程序失败");
-            // TODO: 启动更新程序失败时提示用户（Snackbar 等）
-            OpenDownloadPage();
+            _infoBar.Show(
+                InfoBarSeverity.Error,
+                "启动更新失败",
+                "无法启动更新程序。");
         }
 
         return Task.CompletedTask;
