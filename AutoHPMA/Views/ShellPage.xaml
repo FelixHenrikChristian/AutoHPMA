@@ -73,9 +73,11 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <Grid Margin="{StaticResource NavigationViewPageContentMargin}">
-                <Frame x:Name="NavigationFrame" />
-            </Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+                <Grid Padding="{StaticResource NavigationViewPageContentPadding}">
+                    <Frame x:Name="NavigationFrame" />
+                </Grid>
+            </ScrollViewer>
         </NavigationView>
     </Grid>
 </Page>

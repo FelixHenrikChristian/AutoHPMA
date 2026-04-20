@@ -7,8 +7,7 @@
     mc:Ignorable="d"
     Loaded="OnLoaded">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel x:Name="ContentArea" Padding="{StaticResource NavigationViewPageContentPadding}">
+    <StackPanel x:Name="ContentArea">
             <!-- 应用设置 -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                 <FontIcon
@@ -358,6 +357,5 @@
                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                 FontSize="12"
                 Text="© 2024-2026 Felix Christian. 开源许可：MIT License" />
-        </StackPanel>
-    </ScrollViewer>
+    </StackPanel>
 </Page>

@@ -6,5 +6,5 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid x:Name="ContentArea" Padding="{StaticResource NavigationViewPageContentPadding}" />
+    <Grid x:Name="ContentArea" />
 </Page>
