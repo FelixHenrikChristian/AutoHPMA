@@ -10,7 +10,10 @@ using AutoHPMA.Views;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+
+using Serilog;
 
 namespace AutoHPMA;
 
@@ -46,9 +49,16 @@ public partial class App : Application
     {
         InitializeComponent();
 
+        LoggingHelper.ConfigureSerilog();
+
         Host = Microsoft.Extensions.Hosting.Host.
         CreateDefaultBuilder().
         UseContentRoot(AppContext.BaseDirectory).
+        ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddSerilog(dispose: true);
+        }).
         ConfigureServices((context, services) =>
         {
             // Default Activation Handler
@@ -98,8 +108,8 @@ public partial class App : Application
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        // TODO: Log and handle exceptions as appropriate.
-        // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
+        Log.Fatal(e.Exception, "未处理异常: {Message}", e.Message);
+        Log.CloseAndFlush();
     }
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)

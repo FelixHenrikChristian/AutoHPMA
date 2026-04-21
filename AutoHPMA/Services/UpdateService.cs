@@ -41,11 +41,13 @@ public class UpdateService : IUpdateService
 
     public async Task CheckUpdateAsync(UpdateOption option)
     {
+        _logger.LogInformation("开始检查更新 (触发方式: {Trigger})", option.Trigger);
         try
         {
             var latestRelease = await GetLatestReleaseAsync();
             if (latestRelease == null)
             {
+                _logger.LogWarning("未能获取到最新版本信息 (API: {Url})", GitHubApiUrl);
                 if (option.Trigger == UpdateTrigger.Manual)
                 {
                     _infoBar.Show(
@@ -60,6 +62,7 @@ public class UpdateService : IUpdateService
             var latestVersionStr = latestRelease.TagName.TrimStart('v');
             var latestVersion = new Version(latestVersionStr);
             var currentVersion = GetCurrentAppVersion();
+            _logger.LogInformation("当前版本: {Current}, 最新版本: {Latest}", currentVersion, latestVersion);
 
             if (latestVersion <= currentVersion)
             {
@@ -100,15 +103,39 @@ public class UpdateService : IUpdateService
         return Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
     }
 
-    private static async Task<GitHubRelease?> GetLatestReleaseAsync()
+    private async Task<GitHubRelease?> GetLatestReleaseAsync()
     {
         try
         {
-            var json = await HttpClient.GetStringAsync(GitHubApiUrl);
+            using var response = await HttpClient.GetAsync(GitHubApiUrl);
+            var json = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("GitHub API 请求失败: {StatusCode} {Reason} Body: {Body}",
+                    (int)response.StatusCode, response.ReasonPhrase, json);
+                return null;
+            }
+
             return JsonSerializer.Deserialize<GitHubRelease>(json);
         }
-        catch
+        catch (HttpRequestException ex)
         {
+            _logger.LogError(ex, "请求 GitHub API 失败 (网络错误)");
+            return null;
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogError(ex, "请求 GitHub API 超时");
+            return null;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "解析 GitHub API 返回的 JSON 失败");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取最新 Release 信息时发生未知异常");
             return null;
         }
     }
