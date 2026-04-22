@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 using Windows.ApplicationModel;
 
@@ -23,6 +24,7 @@ public partial class SettingsViewModel : ObservableRecipient
     private readonly IThemeSelectorService _themeSelectorService;
     private readonly ILocalSettingsService _localSettingsService;
     private readonly IUpdateService _updateService;
+    private readonly IInfoBarNotificationService _infoBar;
 
     private bool _suppressThemeChange;
     private bool _suppressPreventSleepPersist;
@@ -56,11 +58,13 @@ public partial class SettingsViewModel : ObservableRecipient
     public SettingsViewModel(
         IThemeSelectorService themeSelectorService,
         ILocalSettingsService localSettingsService,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IInfoBarNotificationService infoBar)
     {
         _themeSelectorService = themeSelectorService;
         _localSettingsService = localSettingsService;
         _updateService = updateService;
+        _infoBar = infoBar;
 
         AppVersion = GetShortAppVersion();
     }
@@ -163,9 +167,38 @@ public partial class SettingsViewModel : ObservableRecipient
     [RelayCommand]
     private async Task ResetSettingsAsync()
     {
+        var xamlRoot = (App.MainWindow.Content as FrameworkElement)?.XamlRoot;
+        if (xamlRoot == null)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = xamlRoot,
+            Title = "重置设置",
+            Content = "将清除所有用户偏好，并立即关闭应用。是否继续？",
+            PrimaryButtonText = "重置并退出",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
         await _localSettingsService.ResetAllAsync();
         PowerSaveHelper.SetPreventSleepWhileRunning(false);
-        // 未接 UI：重置前无确认框，直接退出。
+
+        _infoBar.Show(
+            InfoBarSeverity.Success,
+            "重置完成",
+            "应用即将退出，请重新打开。",
+            TimeSpan.FromSeconds(2.5));
+
+        await Task.Delay(TimeSpan.FromSeconds(2.5));
         Microsoft.UI.Xaml.Application.Current.Exit();
     }
 
