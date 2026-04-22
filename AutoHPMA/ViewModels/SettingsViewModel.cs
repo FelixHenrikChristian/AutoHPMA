@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Linq;
 
 using AutoHPMA.Configuration;
@@ -24,6 +26,7 @@ public partial class SettingsViewModel : ObservableRecipient
 
     private bool _suppressThemeChange;
     private bool _suppressPreventSleepPersist;
+    private bool _suppressDiagnosticModePersist;
 
     public ThemeOption[] ThemeOptions { get; } =
     {
@@ -37,6 +40,9 @@ public partial class SettingsViewModel : ObservableRecipient
 
     [ObservableProperty]
     private bool _preventSleepWhileRunning = true;
+
+    [ObservableProperty]
+    private bool _diagnosticMode;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsUpdateCheckEnabled))]
@@ -65,10 +71,14 @@ public partial class SettingsViewModel : ObservableRecipient
     public async Task LoadAsync()
     {
         _suppressPreventSleepPersist = true;
+        _suppressDiagnosticModePersist = true;
         try
         {
-            var saved = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.PreventSleepWhileRunning);
-            PreventSleepWhileRunning = saved ?? true;
+            var savedSleep = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.PreventSleepWhileRunning);
+            PreventSleepWhileRunning = savedSleep ?? true;
+
+            var savedDiag = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.DiagnosticMode);
+            DiagnosticMode = savedDiag ?? false;
 
             _suppressThemeChange = true;
             try
@@ -84,6 +94,7 @@ public partial class SettingsViewModel : ObservableRecipient
         finally
         {
             _suppressPreventSleepPersist = false;
+            _suppressDiagnosticModePersist = false;
         }
     }
 
@@ -116,6 +127,37 @@ public partial class SettingsViewModel : ObservableRecipient
     {
         await _localSettingsService.SaveSettingAsync(SettingsKeys.PreventSleepWhileRunning, value);
         PowerSaveHelper.SetPreventSleepWhileRunning(value);
+    }
+
+    partial void OnDiagnosticModeChanged(bool value)
+    {
+
+        LoggingHelper.SetDiagnosticMode(value);
+
+        if (_suppressDiagnosticModePersist)
+        {
+            return;
+        }
+
+        _ = _localSettingsService.SaveSettingAsync(SettingsKeys.DiagnosticMode, value);
+    }
+
+    [RelayCommand]
+    private void OpenLogFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(LoggingHelper.LogDirectory);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = LoggingHelper.LogDirectory,
+                UseShellExecute = true,
+            });
+        }
+        catch
+        {
+            // 打开失败不影响主流程；若需要可在此记录日志。
+        }
     }
 
     [RelayCommand]

@@ -1,0 +1,50 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        全局覆盖 WinUI 默认 Expander 主题资源，让所有 Expander 的 Header
+        与 CardStyle 保持相同的内边距和最小高度，视觉上与单行卡片对齐。
+    -->
+    <Thickness x:Key="ExpanderHeaderPadding">16,14,16,14</Thickness>
+    <x:Double x:Key="ExpanderMinHeight">64</x:Double>
+
+    <!--
+        通用卡片样式（Border）。
+        适用于任何页面的单行/单块内容卡片：设置项、统计标、操作中心等。
+    -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="MinHeight" Value="64" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
+    <!--
+        通用卡片型 Expander 样式。
+        显式 x:Key，避免影响其他场景下特殊用途的 Expander（如展示性面板）。
+        外观与 CardStyle 完全一致：折叠头与卡片等高、同背景/描边/圆角。
+    -->
+    <Style x:Key="CardExpanderStyle" TargetType="Expander">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinHeight" Value="64" />
+    </Style>
+
+    <!--
+        卡片内部分行样式（Grid）。
+        用于 Expander 或多行卡片内部的子行，统一 Padding/MinHeight。
+    -->
+    <Style x:Key="CardRowStyle" TargetType="Grid">
+        <Setter Property="Padding" Value="4,10" />
+        <Setter Property="MinHeight" Value="48" />
+    </Style>
+
+</ResourceDictionary>

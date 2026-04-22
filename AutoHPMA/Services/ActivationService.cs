@@ -79,6 +79,9 @@ public class ActivationService : IActivationService
         var preventSleep = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.PreventSleepWhileRunning);
         PowerSaveHelper.SetPreventSleepWhileRunning(preventSleep ?? true);
 
+        var diagnostic = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.DiagnosticMode);
+        LoggingHelper.SetDiagnosticMode(diagnostic ?? false);
+
         await Task.CompletedTask;
     }
 }

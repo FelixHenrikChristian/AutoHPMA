@@ -2,6 +2,7 @@ using System;
 using System.IO;
 
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace AutoHPMA.Helpers;
@@ -18,6 +19,30 @@ public static class LoggingHelper
     public static string LogDirectory { get; } = ResolveLogDirectory();
 
     /// <summary>
+    /// 运行时可调的全局最低日志级别开关。默认 <see cref="LogEventLevel.Information"/>。
+    /// 打开"诊断模式"时切到 <see cref="LogEventLevel.Debug"/>，立即生效、无需重启。
+    /// </summary>
+    public static LoggingLevelSwitch LevelSwitch { get; } = new LoggingLevelSwitch(LogEventLevel.Information);
+
+    /// <summary>
+    /// 诊断模式下使用的级别（即"详细日志"的含义）。
+    /// </summary>
+    public const LogEventLevel DiagnosticLevel = LogEventLevel.Debug;
+
+    /// <summary>
+    /// 正常模式下的级别。
+    /// </summary>
+    public const LogEventLevel NormalLevel = LogEventLevel.Information;
+
+    /// <summary>
+    /// 设置或取消诊断模式。线程安全，立即生效。
+    /// </summary>
+    public static void SetDiagnosticMode(bool enabled)
+    {
+        LevelSwitch.MinimumLevel = enabled ? DiagnosticLevel : NormalLevel;
+    }
+
+    /// <summary>
     /// 配置 Serilog 静态 Logger。应在 Host 构建之前调用一次。
     /// </summary>
     public static void ConfigureSerilog()
@@ -27,12 +52,13 @@ public static class LoggingHelper
         const string outputTemplate =
             "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}";
 
-        Log.Logger = new LoggerConfiguration()
 #if DEBUG
-            .MinimumLevel.Debug()
-#else
-            .MinimumLevel.Information()
+        // 开发构建默认放到 Debug，便于本地排查。
+        LevelSwitch.MinimumLevel = DiagnosticLevel;
 #endif
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.ControlledBy(LevelSwitch)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .Enrich.FromLogContext()
