@@ -50,6 +50,7 @@ public partial class App : Application
         InitializeComponent();
 
         LoggingHelper.ConfigureSerilog();
+        LoggingHelper.LogStartupBanner();
 
         Host = Microsoft.Extensions.Hosting.Host.
         CreateDefaultBuilder().

@@ -1,9 +1,12 @@
 using System;
 using System.IO;
+using System.Reflection;
 
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+
+using Windows.ApplicationModel;
 
 namespace AutoHPMA.Helpers;
 
@@ -76,6 +79,43 @@ public static class LoggingHelper
     /// 程序退出时刷新并释放 Logger。
     /// </summary>
     public static void CloseAndFlush() => Log.CloseAndFlush();
+
+    /// <summary>
+    /// 写入应用启动横幅（版本、运行模式、OS、日志目录等），便于事后定位问题环境。
+    /// </summary>
+    public static void LogStartupBanner()
+    {
+        var version = GetAppVersion();
+        var isMsix = RuntimeHelper.IsMSIX;
+        var os = Environment.OSVersion.VersionString;
+        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+        var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+        Log.Information("==================== AutoHPMA 启动 ====================");
+        Log.Information("版本: v{Version}  运行模式: {Mode}  架构: {Arch}", version, isMsix ? "MSIX" : "Unpackaged", arch);
+        Log.Information("运行时: {Framework}", framework);
+        Log.Information("操作系统: {OS}", os);
+    }
+
+    /// <summary>
+    /// 记录应用正常退出日志。
+    /// </summary>
+    public static void LogShutdown()
+    {
+        Log.Information("==================== AutoHPMA 退出 ====================");
+    }
+
+    private static string GetAppVersion()
+    {
+        if (RuntimeHelper.IsMSIX)
+        {
+            var v = Package.Current.Id.Version;
+            return $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision}";
+        }
+
+        var asmVer = Assembly.GetExecutingAssembly().GetName().Version;
+        return asmVer?.ToString() ?? "0.0.0.0";
+    }
 
     private static string ResolveLogDirectory()
     {
