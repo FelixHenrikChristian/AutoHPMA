@@ -73,13 +73,8 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <!-- InfoBar 放在 NavigationView 内容区内，仅覆盖右侧页面区域，不盖住左侧导航 -->
             <Grid>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
-                    <Grid Padding="{StaticResource NavigationViewPageContentPadding}">
-                        <Frame x:Name="NavigationFrame" />
-                    </Grid>
-                </ScrollViewer>
+                <Frame x:Name="NavigationFrame" />
                 <InfoBar x:Name="GlobalInfoBar"
                          VerticalAlignment="Bottom"
                          HorizontalAlignment="Stretch"
