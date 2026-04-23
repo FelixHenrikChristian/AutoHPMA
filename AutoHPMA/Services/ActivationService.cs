@@ -1,8 +1,9 @@
-﻿using AutoHPMA.Activation;
+using AutoHPMA.Activation;
 using AutoHPMA.Configuration;
 using AutoHPMA.Contracts.Services;
 using AutoHPMA.Helpers;
 using AutoHPMA.Views;
+using AutoHPMA.Views.Dialogs;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -46,6 +47,36 @@ public class ActivationService : IActivationService
 
         // Activate the MainWindow.
         App.MainWindow.Activate();
+
+        // 检查是否已接受使用条款（使用 ContentDialog 在 MainWindow 内以模态方式显示）
+        var hasShownTerms = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HasShownTermsOfUse);
+        if (hasShownTerms != true)
+        {
+            // XamlRoot 在内容渲染完成后才可用，需要等待 Loaded 事件
+            var shell = App.MainWindow.Content as FrameworkElement;
+            if (shell != null)
+            {
+                if (shell.XamlRoot == null)
+                {
+                    var tcs = new TaskCompletionSource();
+                    shell.Loaded += (_, _) => tcs.TrySetResult();
+                    await tcs.Task;
+                }
+
+                var dialog = new TermsOfUseDialog { XamlRoot = shell.XamlRoot };
+                await dialog.ShowAsync();
+
+                if (dialog.Accepted)
+                {
+                    await _localSettingsService.SaveSettingAsync(SettingsKeys.HasShownTermsOfUse, true);
+                }
+                else
+                {
+                    Application.Current.Exit();
+                    return;
+                }
+            }
+        }
 
         // Execute tasks after activation.
         await StartupAsync();
