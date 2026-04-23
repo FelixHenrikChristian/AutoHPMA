@@ -179,10 +179,15 @@
                         </StackPanel>
                         <Button
                             Grid.Column="2"
-                            MinWidth="120"
+                            HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Command="{x:Bind ViewModel.OpenLogFolderCommand}"
-                            Content="打开日志目录" />
+                            ToolTipService.ToolTip="打开日志目录">
+                            <FontIcon
+                                FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                FontSize="16"
+                                Glyph="&#xE838;" />
+                        </Button>
                     </Grid>
                 </StackPanel>
             </Expander>
@@ -215,8 +220,12 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Command="{x:Bind ViewModel.ResetSettingsCommand}"
-                        Content="重置"
-                        Style="{ThemeResource DefaultButtonStyle}" />
+                        ToolTipService.ToolTip="重置所有用户偏好（重启后生效）">
+                        <FontIcon
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="16"
+                            Glyph="&#xE777;" />
+                    </Button>
                 </Grid>
             </Border>
 

@@ -101,9 +101,9 @@ public static class LoggingHelper
         var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
 
         Log.Information("==================== AutoHPMA 启动 ====================");
-        Log.Information("版本: v{Version}  运行模式: {Mode}  架构: {Arch}", version, isMsix ? "MSIX" : "Unpackaged", arch);
-        Log.Information("运行时: {Framework}", framework);
-        Log.Information("操作系统: {OS}", os);
+        Log.Information("版本: v{Version:l}  运行模式: {Mode:l}  架构: {Arch}", version, isMsix ? "MSIX" : "Unpackaged", arch);
+        Log.Information("运行时: {Framework:l}", framework);
+        Log.Information("操作系统: {OS:l}", os);
     }
 
     /// <summary>
