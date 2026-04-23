@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Reflection;
 
+using AutoHPMA.Services.Logging;
+
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -46,6 +48,12 @@ public static class LoggingHelper
     }
 
     /// <summary>
+    /// 内存日志缓冲，用于日志页实时展示。
+    /// 在 <see cref="ConfigureSerilog"/> 执行后即可使用。
+    /// </summary>
+    public static InMemoryLogSink LogBuffer { get; } = new InMemoryLogSink(2000);
+
+    /// <summary>
     /// 配置 Serilog 静态 Logger。应在 Host 构建之前调用一次。
     /// </summary>
     public static void ConfigureSerilog()
@@ -66,6 +74,7 @@ public static class LoggingHelper
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .WriteTo.Debug(outputTemplate: outputTemplate)
+            .WriteTo.Sink(LogBuffer)
             .WriteTo.File(
                 path: Path.Combine(LogDirectory, "app-.log"),
                 rollingInterval: RollingInterval.Day,
