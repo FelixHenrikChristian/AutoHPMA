@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Linq;
+
+using Microsoft.Extensions.Logging;
 
 using AutoHPMA.Configuration;
 using AutoHPMA.Contracts.Services;
@@ -25,6 +27,7 @@ public partial class SettingsViewModel : ObservableRecipient
     private readonly ILocalSettingsService _localSettingsService;
     private readonly IUpdateService _updateService;
     private readonly IInfoBarNotificationService _infoBar;
+    private readonly ILogger<SettingsViewModel> _logger;
 
     private bool _suppressThemeChange;
     private bool _suppressPreventSleepPersist;
@@ -59,12 +62,14 @@ public partial class SettingsViewModel : ObservableRecipient
         IThemeSelectorService themeSelectorService,
         ILocalSettingsService localSettingsService,
         IUpdateService updateService,
-        IInfoBarNotificationService infoBar)
+        IInfoBarNotificationService infoBar,
+        ILogger<SettingsViewModel> logger)
     {
         _themeSelectorService = themeSelectorService;
         _localSettingsService = localSettingsService;
         _updateService = updateService;
         _infoBar = infoBar;
+        _logger = logger;
 
         AppVersion = GetShortAppVersion();
     }
@@ -158,9 +163,9 @@ public partial class SettingsViewModel : ObservableRecipient
                 UseShellExecute = true,
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // 打开失败不影响主流程；若需要可在此记录日志。
+            _logger.LogError(ex, "打开日志目录失败");
         }
     }
 

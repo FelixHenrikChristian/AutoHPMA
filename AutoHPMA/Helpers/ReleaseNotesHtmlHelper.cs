@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 
 using Microsoft.UI.Xaml;
 
+using Microsoft.Extensions.Logging;
+
 namespace AutoHPMA.Helpers;
 
 /// <summary>
@@ -40,6 +42,7 @@ internal static class ReleaseNotesHtmlHelper
     public static async Task<string> GenerateReleaseNotesHtmlAsync(
         string markdown,
         bool isDarkTheme,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(markdown))
@@ -64,12 +67,14 @@ internal static class ReleaseNotesHtmlHelper
             var innerHtml = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             return WrapHtml(isDarkTheme, $"<div class='markdown-body'>{innerHtml}</div>", pageTitle: "更新日志");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger?.LogWarning(ex, "GitHub Markdown API 请求失败，降级为纯文本显示");
             return GeneratePlainTextFallbackHtml(markdown, isDarkTheme);
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException ex)
         {
+            logger?.LogWarning(ex, "GitHub Markdown API 请求超时，降级为纯文本显示");
             return GeneratePlainTextFallbackHtml(markdown, isDarkTheme);
         }
     }

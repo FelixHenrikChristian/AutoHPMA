@@ -120,17 +120,17 @@ public class UpdateService : IUpdateService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "请求 GitHub API 失败 (网络错误)");
+            _logger.LogWarning(ex, "请求 GitHub API 失败 (网络错误)");
             return null;
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogError(ex, "请求 GitHub API 超时");
+            _logger.LogWarning(ex, "请求 GitHub API 超时");
             return null;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "解析 GitHub API 返回的 JSON 失败");
+            _logger.LogWarning(ex, "解析 GitHub API 返回的 JSON 失败");
             return null;
         }
         catch (Exception ex)
@@ -184,6 +184,7 @@ public class UpdateService : IUpdateService
             var updaterExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AutoHPMA.update.exe");
             if (!File.Exists(updaterExePath))
             {
+                _logger.LogError("更新程序不存在: {Path}", updaterExePath);
                 _infoBar.Show(
                     InfoBarSeverity.Warning,
                     "无法启动更新",

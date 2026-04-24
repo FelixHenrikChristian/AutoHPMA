@@ -5,6 +5,8 @@ using AutoHPMA.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
+using Microsoft.Extensions.Logging;
+
 using WinUIEx;
 
 namespace AutoHPMA.Views;
@@ -19,6 +21,7 @@ public sealed partial class UpdateWindow : WindowEx
     }
 
     private readonly GitHubRelease _release;
+    private readonly ILogger<UpdateWindow> _logger = App.GetService<ILogger<UpdateWindow>>();
     private UpdateResult _result = UpdateResult.Cancel;
     private TaskCompletionSource<UpdateResult>? _completion;
 
@@ -86,9 +89,11 @@ public sealed partial class UpdateWindow : WindowEx
                     "Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException",
                     StringComparison.Ordinal))
             {
-                // 无 WebView2 运行时时无法嵌入浏览器；仍可使用下方更新/下载按钮。
+                _logger.LogWarning("未检测到 WebView2 运行时，更新日志将无法显示");
                 return;
             }
+
+            _logger.LogWarning(ex, "WebView2 初始化失败");
 
             await LoadFallbackContentAsync();
         }
@@ -99,11 +104,12 @@ public sealed partial class UpdateWindow : WindowEx
         try
         {
             var isDark = ReleaseNotesHtmlHelper.ResolveIsDarkTheme(RootHost);
-            var html = await ReleaseNotesHtmlHelper.GenerateReleaseNotesHtmlAsync(_release.Body, isDark);
+            var html = await ReleaseNotesHtmlHelper.GenerateReleaseNotesHtmlAsync(_release.Body, isDark, _logger);
             ReleaseNotesWebView.NavigateToString(html);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "加载更新日志失败，使用降级显示");
             await LoadFallbackContentAsync();
         }
     }

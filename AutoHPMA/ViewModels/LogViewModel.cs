@@ -3,6 +3,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 
+using Microsoft.Extensions.Logging;
+
 using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 
@@ -18,6 +20,13 @@ namespace AutoHPMA.ViewModels;
 public partial class LogViewModel : ObservableRecipient
 {
     private const int MaxDisplayEntries = 2000;
+
+    private readonly ILogger<LogViewModel> _logger;
+
+    public LogViewModel(ILogger<LogViewModel> logger)
+    {
+        _logger = logger;
+    }
 
     private DispatcherQueue? _dispatcher;
     private bool _subscribed;
@@ -185,9 +194,9 @@ public partial class LogViewModel : ObservableRecipient
                 UseShellExecute = true,
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // 打开失败忽略。
+            _logger.LogError(ex, "打开日志文件失败");
         }
     }
 }
