@@ -10,6 +10,15 @@
     <x:Double x:Key="ExpanderMinHeight">64</x:Double>
 
     <!--
+        清零 Expander 内容区内边距，改由 CardRowStyle 自己负责横向 16 内边距，
+        确保展开后子行与 Header 的图标/文字/右侧控件在同一垂直列对齐，
+        分隔线也能顶格横贯整张卡，避免"内容整体向内收缩一圈"的错位观感。
+    -->
+    <Thickness x:Key="ExpanderContentPadding">0</Thickness>
+    <Thickness x:Key="ExpanderContentDownPadding">0</Thickness>
+    <Thickness x:Key="ExpanderContentUpPadding">0</Thickness>
+
+    <!--
         通用卡片样式（Border）。
         适用于任何页面的单行/单块内容卡片：设置项、统计标、操作中心等。
     -->
@@ -43,8 +52,8 @@
         用于 Expander 或多行卡片内部的子行，统一 Padding/MinHeight。
     -->
     <Style x:Key="CardRowStyle" TargetType="Grid">
-        <Setter Property="Padding" Value="4,10" />
-        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="MinHeight" Value="56" />
     </Style>
 
 </ResourceDictionary>
