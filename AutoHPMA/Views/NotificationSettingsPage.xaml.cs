@@ -12,5 +12,11 @@ public sealed partial class NotificationSettingsPage : Page
         ViewModel = App.GetService<NotificationSettingsViewModel>();
         InitializeComponent();
     }
+
+    private async void OnLoaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        Loaded -= OnLoaded;
+        await ViewModel.LoadAsync();
+    }
 }
 

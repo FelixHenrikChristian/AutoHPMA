@@ -51,6 +51,7 @@ public partial class App : Application
 
         LoggingHelper.ConfigureSerilog();
         LoggingHelper.LogStartupBanner();
+        AppNotificationHelper.Register();
 
         Host = Microsoft.Extensions.Hosting.Host.
         CreateDefaultBuilder().

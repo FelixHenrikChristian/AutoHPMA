@@ -113,6 +113,12 @@ public class ActivationService : IActivationService
         var diagnostic = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.DiagnosticMode);
         LoggingHelper.SetDiagnosticMode(diagnostic ?? false);
 
+        var notificationEnabled = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.NotificationEnabled);
+        AppNotificationHelper.IsEnabled = notificationEnabled ?? true;
+
+        var notificationSound = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.NotificationSoundEnabled);
+        AppNotificationHelper.IsSoundEnabled = notificationSound ?? true;
+
         await Task.CompletedTask;
     }
 }
