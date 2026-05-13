@@ -6,6 +6,7 @@ using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 using AutoHPMA.Services;
 using AutoHPMA.ViewModels;
+using AutoHPMA.ViewModels.TestPages;
 using AutoHPMA.Views;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,7 @@ public partial class App : Application
             services.AddTransient<LogPage>();
             services.AddTransient<TestViewModel>();
             services.AddTransient<TestPage>();
+            services.AddTransient<ScreenshotTestViewModel>();
             services.AddTransient<HotkeySettingsViewModel>();
             services.AddTransient<HotkeySettingsPage>();
             services.AddTransient<NotificationSettingsViewModel>();

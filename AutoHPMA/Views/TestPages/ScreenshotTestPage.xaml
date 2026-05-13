@@ -6,12 +6,92 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="截屏测试" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="此处将放置截屏方式选择、窗口选择、截图预览等内容。"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    <ScrollViewer Padding="24,16,24,24">
+        <StackPanel Spacing="16" MaxWidth="900" HorizontalAlignment="Stretch">
+
+            <!-- 截屏配置 -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE713;" FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="截屏配置"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+
+                    <Grid ColumnSpacing="12" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="截屏方式" />
+                            <TextBlock Text="不同 API 对窗口的兼容性与性能不同"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                                  HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Bind ViewModel.CaptureMethods}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedMethod, Mode=TwoWay}" />
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="目标窗口" />
+                            <TextBlock Text="选择需要截图/录屏的可见窗口"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ComboBox Grid.Row="1" Grid.Column="1"
+                                  HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Bind ViewModel.Windows}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedWindow, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName" />
+                        <Button Grid.Row="1" Grid.Column="2"
+                                ToolTipService.ToolTip="刷新窗口列表"
+                                Command="{x:Bind ViewModel.RefreshWindowsCommand}">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 操作 -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="实时预览" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Text="打开独立窗口对所选窗口进行实时录屏，可保存当前帧。"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   FontSize="12" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Command="{x:Bind ViewModel.StartPreviewCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE768;" FontSize="14" />
+                            <TextBlock Text="开始预览" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
