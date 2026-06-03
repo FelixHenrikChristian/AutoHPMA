@@ -54,4 +54,39 @@ public static class WindowEnumerator
 
         return list.OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase).ToList();
     }
+
+    public static IReadOnlyList<WindowInfo> EnumerateChildWindows(WindowInfo parentWindow)
+    {
+        ArgumentNullException.ThrowIfNull(parentWindow);
+
+        var list = new List<WindowInfo>();
+        NativeMethods.EnumChildWindows(parentWindow.Handle, (hWnd, _) =>
+        {
+            var length = NativeMethods.GetWindowTextLength(hWnd);
+            var title = string.Empty;
+            if (length > 0)
+            {
+                var sb = new StringBuilder(length + 1);
+                NativeMethods.GetWindowText(hWnd, sb, sb.Capacity);
+                title = sb.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = $"[子窗口 0x{hWnd.ToInt64():X}]";
+            }
+
+            list.Add(new WindowInfo
+            {
+                Handle = hWnd,
+                Title = title,
+                ProcessName = $"{parentWindow.ProcessName} (子窗口)",
+                ProcessId = parentWindow.ProcessId,
+            });
+
+            return true;
+        }, IntPtr.Zero);
+
+        return list.OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase).ToList();
+    }
 }

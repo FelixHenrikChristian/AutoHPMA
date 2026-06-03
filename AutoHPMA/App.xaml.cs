@@ -83,6 +83,7 @@ public partial class App : Application
 
             // Core Services
             services.AddSingleton<IFileService, FileService>();
+            services.AddSingleton<IWindowInteractionService, WindowInteractionService>();
 
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();
@@ -96,6 +97,7 @@ public partial class App : Application
             services.AddTransient<TestViewModel>();
             services.AddTransient<TestPage>();
             services.AddTransient<ScreenshotTestViewModel>();
+            services.AddTransient<MouseSimulationViewModel>();
             services.AddTransient<HotkeySettingsViewModel>();
             services.AddTransient<HotkeySettingsPage>();
             services.AddTransient<NotificationSettingsViewModel>();

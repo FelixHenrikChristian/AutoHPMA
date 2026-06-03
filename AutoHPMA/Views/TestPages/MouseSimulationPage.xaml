@@ -4,14 +4,526 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:AutoHPMA.Models"
+    x:Name="RootPage"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="鼠标模拟" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="此处将放置窗口选择、点击/拖拽/长按操作列表以及执行控制。"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    <ScrollViewer Padding="0,10,10,10">
+        <StackPanel>
+            <!-- 窗口配置卡片 -->
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <FontIcon Glyph="&#xE7F4;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="窗口配置"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid Margin="0,0,0,12" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="目标窗口" />
+                            <TextBlock Text="选择要进行鼠标操作的目标窗口"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  Width="260"
+                                  VerticalAlignment="Center"
+                                  ItemsSource="{x:Bind ViewModel.AvailableWindows}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedClickWindow, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName" />
+                        <Button Grid.Column="2"
+                                VerticalAlignment="Center"
+                                Command="{x:Bind ViewModel.RefreshWindowListCommand}"
+                                ToolTipService.ToolTip="刷新窗口列表">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                        </Button>
+                    </Grid>
+
+                    <Grid Visibility="{x:Bind ViewModel.ChildWindowsVisibility, Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="子窗口（可选）" />
+                            <TextBlock Text="若父窗口无法交互，可选择子窗口进行操作"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  Width="260"
+                                  Margin="0,0,40,0"
+                                  VerticalAlignment="Center"
+                                  ItemsSource="{x:Bind ViewModel.AvailableChildWindows}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedClickChildWindow, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 操作列表卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <FontIcon Glyph="&#xEA37;"
+                                      Margin="0,0,8,0"
+                                      FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="操作列表"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                            <Button Command="{x:Bind ViewModel.ImportActionsCommand}"
+                                    ToolTipService.ToolTip="导入操作列表"
+                                    Padding="8,6">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE896;" FontSize="14" />
+                                    <TextBlock Text="导入" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{x:Bind ViewModel.ExportActionsCommand}"
+                                    ToolTipService.ToolTip="导出操作列表"
+                                    Padding="8,6">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE898;" FontSize="14" />
+                                    <TextBlock Text="导出" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{x:Bind ViewModel.ClearAllActionsCommand}"
+                                    ToolTipService.ToolTip="清空所有操作"
+                                    Padding="8,6">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                    <TextBlock Text="清空" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12" Spacing="8">
+                        <Button Command="{x:Bind ViewModel.AddClickActionCommand}"
+                                Padding="12,8"
+                                Background="#1F3B82F6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE7C9;" FontSize="14" />
+                                <TextBlock Text="+ 点击" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{x:Bind ViewModel.AddDragActionCommand}"
+                                Padding="12,8"
+                                Background="#1F22C55E">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE7C2;" FontSize="14" />
+                                <TextBlock Text="+ 拖拽" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{x:Bind ViewModel.AddLongPressActionCommand}"
+                                Padding="12,8"
+                                Background="#1FF97316">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE916;" FontSize="14" />
+                                <TextBlock Text="+ 长按" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <Border BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="200" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Padding="8,7"
+                                  Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                  ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="70" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="112" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="类型" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Text="描述" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="2" Text="参数" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="3" Text="操作" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            </Grid>
+
+                            <ListView Grid.Row="1"
+                                      ItemsSource="{x:Bind ViewModel.MouseActions}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedMouseAction, Mode=TwoWay}"
+                                      SelectionMode="Single">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Padding" Value="0" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:MouseActionModel">
+                                        <Grid Padding="8,6"
+                                              MinHeight="38"
+                                              ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="70" />
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="112" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Grid.Column="0"
+                                                    Background="{x:Bind ActionBackground}"
+                                                    CornerRadius="4"
+                                                    Padding="6,3"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind ActionTypeName}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{x:Bind ActionForeground}" />
+                                            </Border>
+
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{x:Bind Description, Mode=OneWay}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center" />
+
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{x:Bind ParameterSummary, Mode=OneWay}"
+                                                       FontFamily="Consolas"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center" />
+
+                                            <StackPanel Grid.Column="3"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Center"
+                                                        Spacing="2">
+                                                <Button Padding="3"
+                                                        MinWidth="28"
+                                                        ToolTipService.ToolTip="上移"
+                                                        Click="MoveActionUp_Click">
+                                                    <FontIcon Glyph="&#xE70E;" FontSize="11" />
+                                                </Button>
+                                                <Button Padding="3"
+                                                        MinWidth="28"
+                                                        ToolTipService.ToolTip="下移"
+                                                        Click="MoveActionDown_Click">
+                                                    <FontIcon Glyph="&#xE70D;" FontSize="11" />
+                                                </Button>
+                                                <Button Padding="3"
+                                                        MinWidth="28"
+                                                        ToolTipService.ToolTip="删除"
+                                                        Click="RemoveMouseAction_Click">
+                                                    <FontIcon Glyph="&#xE74D;"
+                                                              FontSize="11"
+                                                              Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <!-- 参数编辑面板（选中动作时显示） -->
+                    <Border Margin="0,12,0,0"
+                            Padding="16"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            DataContext="{x:Bind ViewModel.SelectedMouseAction, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.EditorVisibility, Mode=OneWay}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Background="{Binding ActionBackground}"
+                                            CornerRadius="6"
+                                            Padding="10,6"
+                                            Margin="0,0,12,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE70F;"
+                                                      FontSize="14"
+                                                      Foreground="{Binding ActionForeground}" />
+                                            <TextBlock Text="{Binding ActionTypeName}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding ActionForeground}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="13"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        Command="{x:Bind ViewModel.ClearSelectionCommand}"
+                                        ToolTipService.ToolTip="关闭"
+                                        Padding="6">
+                                    <FontIcon Glyph="&#xE711;" FontSize="14" />
+                                </Button>
+                            </Grid>
+
+                            <StackPanel Grid.Row="1" Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10"
+                                            MinWidth="220">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0"
+                                                        Orientation="Horizontal"
+                                                        Margin="0,0,12,0"
+                                                        VerticalAlignment="Center"
+                                                        Spacing="6">
+                                                <FontIcon Glyph="&#xE8AC;"
+                                                          FontSize="14"
+                                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock Text="描述"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     MinWidth="120" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon Glyph="&#xE707;"
+                                                      FontSize="14"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Text="坐标"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="X" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding X, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Maximum="65535"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                            <TextBlock Text="Y" FontSize="12" Margin="12,0,6,0" VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding Y, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Maximum="65535"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10"
+                                            Visibility="{Binding EndPointVisibility}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon Glyph="&#xE72A;"
+                                                      FontSize="14"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Text="终点"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="X" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding EndX, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Maximum="65535"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                            <TextBlock Text="Y" FontSize="12" Margin="12,0,6,0" VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding EndY, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Maximum="65535"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10"
+                                            Visibility="{Binding DurationVisibility}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon Glyph="&#xE823;"
+                                                      FontSize="14"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Text="时长"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding Duration, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                            <TextBlock Text="ms"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       Margin="6,0,0,0"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon Glyph="&#xE916;"
+                                                      FontSize="14"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Text="间隔"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding Interval, Mode=TwoWay}"
+                                                       Minimum="0"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                            <TextBlock Text="ms"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       Margin="6,0,0,0"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon Glyph="&#xE895;"
+                                                      FontSize="14"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Text="次数"
+                                                       FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center" />
+                                            <NumberBox Value="{Binding Times, Mode=TwoWay}"
+                                                       Minimum="1"
+                                                       Width="80"
+                                                       SpinButtonPlacementMode="Hidden" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid Margin="0,16,0,0">
+                        <Button HorizontalAlignment="Right"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Command="{x:Bind ViewModel.ExecuteAllActionsCommand}"
+                                Padding="20,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE768;" FontSize="16" />
+                                <TextBlock Text="执行所有操作" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 使用提示 -->
+            <Border Margin="0,12,0,0"
+                    Padding="12"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    CornerRadius="6"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <FontIcon Glyph="&#xE946;"
+                                  Margin="0,0,8,0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="使用提示"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 操作按列表顺序依次执行，执行前会有 3 秒准备时间" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 每个操作执行后会等待其设定的间隔时间" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 支持导入/导出 JSON 格式配置文件，方便保存和分享" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
