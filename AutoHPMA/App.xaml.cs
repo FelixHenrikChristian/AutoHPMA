@@ -75,6 +75,7 @@ public partial class App : Application
             services.AddSingleton<IUpdateService, UpdateService>();
             services.AddSingleton<IInfoBarNotificationService, InfoBarNotificationService>();
             services.AddSingleton<IHotkeyService, HotkeyService>();
+            services.AddSingleton<IOcrService, OcrService>();
             services.AddTransient<INavigationViewService, NavigationViewService>();
 
             services.AddSingleton<IActivationService, ActivationService>();
@@ -98,6 +99,7 @@ public partial class App : Application
             services.AddTransient<TestPage>();
             services.AddTransient<ScreenshotTestViewModel>();
             services.AddTransient<MouseSimulationViewModel>();
+            services.AddTransient<TextRecognitionViewModel>();
             services.AddTransient<HotkeySettingsViewModel>();
             services.AddTransient<HotkeySettingsPage>();
             services.AddTransient<NotificationSettingsViewModel>();

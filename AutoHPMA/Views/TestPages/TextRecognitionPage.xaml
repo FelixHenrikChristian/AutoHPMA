@@ -6,12 +6,208 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="文字识别" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="此处将放置 OCR 引擎选择、输入图像、识别结果展示。"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    <ScrollViewer Padding="0,16,8,0">
+        <StackPanel>
+            <!-- 设置卡片 -->
+            <Border Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <FontIcon Glyph="&#xE713;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="识别设置"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="OCR 识别引擎" />
+                            <TextBlock Text="选择用于识别文字的引擎"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  MinWidth="140"
+                                  ItemsSource="{x:Bind ViewModel.OCRs}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedOCR, Mode=TwoWay}" />
+                    </Grid>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="截图时隐藏窗口" />
+                            <TextBlock Text="启用后点击截图时自动最小化应用"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsOn="{x:Bind ViewModel.HideWindowOnScreenshot, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 操作按钮卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <FontIcon Glyph="&#xE768;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="开始识别"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Command="{x:Bind ViewModel.OCRTestCommand}"
+                                Padding="16,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8E5;" FontSize="16" />
+                                <TextBlock Text="浏览文件" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{x:Bind ViewModel.OCRFromScreenshotCommand}"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Padding="16,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE722;" FontSize="16" />
+                                <TextBlock Text="截图并识别" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <ProgressRing Width="24"
+                                      Height="24"
+                                      IsActive="{x:Bind ViewModel.IsRecognizing, Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 图像预览卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <FontIcon Glyph="&#xEB9F;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="图像预览"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            CornerRadius="6"
+                            Padding="8"
+                            MinHeight="120">
+                        <Grid>
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind ViewModel.PreviewPlaceholderVisibility, Mode=OneWay}">
+                                <FontIcon Glyph="&#xEB9F;"
+                                          FontSize="32"
+                                          Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                          HorizontalAlignment="Center" />
+                                <TextBlock Text="暂无图像"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,8,0,0"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+
+                            <Image Source="{x:Bind ViewModel.OcrPreviewImage, Mode=OneWay}"
+                                   Stretch="Uniform"
+                                   MaxHeight="250"
+                                   Visibility="{x:Bind ViewModel.PreviewImageVisibility, Mode=OneWay}"
+                                   Tapped="PreviewImage_Tapped" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 识别结果卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <FontIcon Glyph="&#xF000;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="识别结果"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBox Text="{x:Bind ViewModel.OcrResult, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             MinHeight="120"
+                             MaxHeight="200"
+                             IsReadOnly="True"
+                             PlaceholderText="识别结果将显示在这里..." />
+                </StackPanel>
+            </Border>
+
+            <!-- 使用提示 -->
+            <Border Margin="0,12,0,16"
+                    Padding="12"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    CornerRadius="6"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <FontIcon Glyph="&#xE946;"
+                                  Margin="0,0,8,0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="使用提示"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 点击「浏览文件」可选择本地图片进行识别" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 点击「截图并识别」会打开系统截图工具，截图后自动识别" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 识别效果：PaddleOCR &gt; WindowsOCR &gt; RapidOCR &gt; TesseractOCR" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
