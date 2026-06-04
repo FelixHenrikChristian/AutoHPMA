@@ -144,24 +144,12 @@ public sealed class WindowInteractionService : IWindowInteractionService
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var currentX = ClampCoordinate((int)Math.Round(options.X + (stepX * i)) + Random.Shared.Next(-2, 3));
-                var currentY = ClampCoordinate((int)Math.Round(options.Y + (stepY * i)) + Random.Shared.Next(-2, 3));
+                var currentX = (int)Math.Round(options.X + (stepX * i));
+                var currentY = (int)Math.Round(options.Y + (stepY * i));
                 currentLParam = MakeLParam(currentX, currentY);
 
                 PostWindowMessage(hWnd, WmMouseMove, MkLButton, currentLParam);
                 await DelayIfPositiveAsync(stepDelay, cancellationToken);
-            }
-
-            for (var i = 0; i < 3; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var finalX = ClampCoordinate(options.EndX + Random.Shared.Next(-1, 2));
-                var finalY = ClampCoordinate(options.EndY + Random.Shared.Next(-1, 2));
-                currentLParam = MakeLParam(finalX, finalY);
-
-                PostWindowMessage(hWnd, WmMouseMove, MkLButton, currentLParam);
-                await DelayIfPositiveAsync(50, cancellationToken);
             }
 
             PostWindowMessage(hWnd, WmLButtonUp, IntPtr.Zero, endLParam);
@@ -173,9 +161,6 @@ public sealed class WindowInteractionService : IWindowInteractionService
             throw;
         }
     }
-
-    private static int ClampCoordinate(int value)
-        => Math.Clamp(value, 0, ushort.MaxValue);
 
     private static async Task DelayIfPositiveAsync(int milliseconds, CancellationToken cancellationToken)
     {
