@@ -4,7 +4,281 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
 
-    <Grid />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+        <StackPanel Margin="40,30,40,30">
+
+            <Border
+                Height="200"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="8">
+                <Grid>
+                    <Border CornerRadius="8">
+                        <Border.Background>
+                            <ImageBrush ImageSource="ms-appx:///Assets/hpma.png" Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
+                    <Border CornerRadius="8">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
+                                <GradientStop Color="#E6000000" />
+                                <GradientStop Offset="0.55" Color="#66000000" />
+                                <GradientStop Offset="0.9" Color="Transparent" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <StackPanel
+                        Margin="24,0,0,16"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Background="Transparent">
+                        <TextBlock
+                            FontSize="24"
+                            FontWeight="SemiLight"
+                            Foreground="White"
+                            Text="AutoHPMA" />
+                        <HyperlinkButton
+                            Padding="0"
+                            Foreground="#B7FFFFFF"
+                            NavigateUri="https://autohpma-web.vercel.app/">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Foreground="#B7FFFFFF"
+                                    Opacity="0.8"
+                                    Text="点击查看文档" />
+                                <FontIcon
+                                    Margin="4,0,0,0"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="12"
+                                    Foreground="#B7FFFFFF"
+                                    Glyph="&#xE71B;" />
+                            </StackPanel>
+                        </HyperlinkButton>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 启动！ -->
+            <Expander
+                Margin="0,12,0,12"
+                Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xE768;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="AutoHPMA，启动！" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="点击启动按钮以开启自动化任务，可展开配置截图参数"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="2"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.ToggleTriggerCommand}"
+                            IsEnabled="{x:Bind ViewModel.ToggleButtonEnabled, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="{x:Bind ViewModel.TriggerButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.TriggerButtonText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid Margin="16" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="状态监测间隔（ms）" TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="游戏状态检测频率，数值越小响应越快，但CPU占用越高（需要重启生效）"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <NumberBox
+                            Grid.Column="1"
+                            MinWidth="120"
+                            Margin="0,0,8,0"
+                            LargeChange="100"
+                            Maximum="60000"
+                            Minimum="50"
+                            SmallChange="50"
+                            SpinButtonPlacementMode="Inline"
+                            Value="{x:Bind ViewModel.StateMonitorInterval, Mode=TwoWay}" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid Margin="16" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="OCR引擎" TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="选择文字识别引擎"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ComboBox
+                            Grid.Column="1"
+                            MinWidth="120"
+                            Margin="0,0,8,0"
+                            ItemsSource="{x:Bind ViewModel.OcrEngines}"
+                            SelectedItem="{x:Bind ViewModel.SelectedOcrEngine, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+            <!-- 日志窗口 -->
+            <Expander
+                Margin="0,0,0,12"
+                Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xE9A3;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="日志窗口" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="在游戏窗口左上角显示悬浮日志，包含当前时间、运行状态和任务日志"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="2"
+                            MinWidth="0"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.LogWindowEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid Margin="16" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="启用日志滚动" TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="当日志内容超出显示区域时，自动循环滚动播放"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="1"
+                            MinWidth="0"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.LogWindowMarqueeEnabled, Mode=TwoWay}"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+            <!-- 遮罩窗口 -->
+            <Expander
+                Margin="0,0,0,12"
+                Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xF1D6;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="遮罩窗口" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="在游戏窗口上叠加透明遮罩层，可视化展示图像识别区域和匹配结果"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="2"
+                            MinWidth="0"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.MaskWindowEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid Margin="16" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="显示文本标签" TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="在检测框上显示识别结果的文字说明"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="1"
+                            MinWidth="0"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.MaskWindowShowTextLabels, Mode=TwoWay}"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+        </StackPanel>
+    </ScrollViewer>
 </Page>

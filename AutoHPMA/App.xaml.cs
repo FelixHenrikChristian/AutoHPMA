@@ -5,6 +5,7 @@ using AutoHPMA.Core.Services;
 using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 using AutoHPMA.Services;
+using AutoHPMA.Services.GameWindowProviders;
 using AutoHPMA.ViewModels;
 using AutoHPMA.ViewModels.TestPages;
 using AutoHPMA.Views;
@@ -76,6 +77,9 @@ public partial class App : Application
             services.AddSingleton<IInfoBarNotificationService, InfoBarNotificationService>();
             services.AddSingleton<IHotkeyService, HotkeyService>();
             services.AddSingleton<IOcrService, OcrService>();
+            services.AddSingleton<IGameWindowProvider, MumuGameWindowProvider>();
+            services.AddSingleton<IGameWindowProvider, OfficialLauncherGameWindowProvider>();
+            services.AddSingleton<IAutomationRuntimeService, AutomationRuntimeService>();
             services.AddTransient<INavigationViewService, NavigationViewService>();
 
             services.AddSingleton<IActivationService, ActivationService>();

@@ -12,6 +12,8 @@ internal static class NativeMethods
     public const int SRCCOPY = 0x00CC0020;
     public const uint PW_CLIENTONLY = 0x00000001;
     public const uint PW_RENDERFULLCONTENT = 0x00000002;
+    public const int SW_SHOW = 5;
+    public const int SW_RESTORE = 9;
 
     public const int BI_RGB = 0;
     public const uint DIB_RGB_COLORS = 0;
@@ -82,7 +84,19 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);

@@ -12,4 +12,14 @@ public sealed partial class HomePage : Page
         ViewModel = App.GetService<HomeViewModel>();
         InitializeComponent();
     }
+
+    private async void OnLoaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        await ViewModel.LoadAsync();
+    }
+
+    private void OnUnloaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        ViewModel.Dispose();
+    }
 }
