@@ -6,12 +6,416 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="色彩过滤" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="此处将放置 HSV/RGB 阈值调整、结果预览。"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    <ScrollViewer Padding="0,16,8,0">
+        <StackPanel>
+            <!-- 输入图像卡片 -->
+            <Border Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <FontIcon Glyph="&#xEB9F;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="输入图像"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 源图像 -->
+                        <Border Grid.Column="0"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="源图像" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        CornerRadius="4"
+                                        MinHeight="100"
+                                        Padding="4">
+                                    <Grid>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind ViewModel.SourcePlaceholderVisibility, Mode=OneWay}">
+                                            <FontIcon Glyph="&#xEB9F;"
+                                                      FontSize="24"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center" />
+                                            <TextBlock Text="未选择"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <Image Source="{x:Bind ViewModel.ColorFilterSourcePreview, Mode=OneWay}"
+                                               Stretch="Uniform"
+                                               MaxHeight="100"
+                                               Visibility="{x:Bind ViewModel.SourcePreviewVisibility, Mode=OneWay}"
+                                               Tapped="PreviewImage_Tapped" />
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{x:Bind ViewModel.SourceImagePathText, Mode=OneWay}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,6,0,0" />
+                                <Button Margin="0,8,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{x:Bind ViewModel.SelectColorFilterSourceCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                        <TextBlock Text="选择源图" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 遮罩图像（可选） -->
+                        <Border Grid.Column="2"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="遮罩图像" FontWeight="SemiBold" />
+                                    <TextBlock Text="（可选）"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                               Margin="4,0,0,0"
+                                               VerticalAlignment="Bottom" />
+                                </StackPanel>
+                                <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        CornerRadius="4"
+                                        MinHeight="100"
+                                        Padding="4">
+                                    <Grid>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind ViewModel.MaskPlaceholderVisibility, Mode=OneWay}">
+                                            <FontIcon Glyph="&#xEB9F;"
+                                                      FontSize="24"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center" />
+                                            <TextBlock Text="未选择"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <Image Source="{x:Bind ViewModel.ColorFilterMaskPreview, Mode=OneWay}"
+                                               Stretch="Uniform"
+                                               MaxHeight="100"
+                                               Visibility="{x:Bind ViewModel.MaskPreviewVisibility, Mode=OneWay}"
+                                               Tapped="PreviewImage_Tapped" />
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{x:Bind ViewModel.MaskImagePathText, Mode=OneWay}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,6,0,0" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{x:Bind ViewModel.SelectColorFilterMaskCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                            <TextBlock Text="选择" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="2"
+                                            Command="{x:Bind ViewModel.ClearColorFilterMaskCommand}"
+                                            ToolTipService.ToolTip="清除遮罩">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 参数与结果卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="280" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左侧：参数设置 -->
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <FontIcon Glyph="&#xE713;"
+                                      Margin="0,0,8,0"
+                                      FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="过滤参数"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- 目标颜色 -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="目标颜色" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        ToolTipService.ToolTip="打开调色板">
+                                    <Button.Flyout>
+                                        <Flyout>
+                                            <ColorPicker Color="{x:Bind ViewModel.TargetColor, Mode=TwoWay}"
+                                                         IsAlphaEnabled="False" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                    <Border Width="28"
+                                            Height="28"
+                                            CornerRadius="4"
+                                            BorderThickness="1"
+                                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                            Background="{x:Bind ViewModel.TargetColorBrush, Mode=OneWay}" />
+                                </Button>
+                                <TextBlock Text="#"
+                                           FontFamily="Consolas"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Margin="8,0,2,0" />
+                                <TextBox Width="80"
+                                         MaxLength="6"
+                                         FontFamily="Consolas"
+                                         FontSize="13"
+                                         Text="{x:Bind ViewModel.TargetColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 颜色空间 -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="颜色空间" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{x:Bind ViewModel.ColorSpaceOptions}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedColorSpace, Mode=TwoWay}"
+                                      Width="100"
+                                      HorizontalAlignment="Left" />
+                        </Grid>
+
+                        <Border Height="1"
+                                Background="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4,0,12" />
+
+                        <TextBlock Text="{x:Bind ViewModel.ColorSpaceDescription, Mode=OneWay}"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   Margin="0,0,0,6"
+                                   FontSize="12" />
+
+                        <!-- 三个容差参数 -->
+                        <Grid Margin="0,0,0,12" MinHeight="130">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <TextBlock Text="{x:Bind ViewModel.HueChannelLabel, Mode=OneWay}"
+                                           FontSize="11"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,6" />
+                                <Slider Orientation="Vertical"
+                                        Height="70"
+                                        Minimum="0"
+                                        Maximum="90"
+                                        StepFrequency="5"
+                                        Value="{x:Bind ViewModel.ColorThreshold, Mode=TwoWay}"
+                                        HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.ColorThresholdText, Mode=OneWay}"
+                                           FontFamily="Consolas"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <TextBlock Text="{x:Bind ViewModel.SaturationChannelLabel, Mode=OneWay}"
+                                           FontSize="11"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,6" />
+                                <Slider Orientation="Vertical"
+                                        Height="70"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        StepFrequency="10"
+                                        Value="{x:Bind ViewModel.SaturationTolerance, Mode=TwoWay}"
+                                        HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.SaturationToleranceText, Mode=OneWay}"
+                                           FontFamily="Consolas"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                                <TextBlock Text="{x:Bind ViewModel.ValueChannelLabel, Mode=OneWay}"
+                                           FontSize="11"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,6" />
+                                <Slider Orientation="Vertical"
+                                        Height="70"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        StepFrequency="10"
+                                        Value="{x:Bind ViewModel.ValueTolerance, Mode=TwoWay}"
+                                        HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.ValueToleranceText, Mode=OneWay}"
+                                           FontFamily="Consolas"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="12"
+                                    HorizontalAlignment="Stretch">
+                            <ProgressRing Width="24"
+                                          Height="24"
+                                          IsActive="{x:Bind ViewModel.IsFiltering, Mode=OneWay}"
+                                          Visibility="{x:Bind ViewModel.ProgressVisibility, Mode=OneWay}" />
+                            <Button Style="{ThemeResource AccentButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Command="{x:Bind ViewModel.FilterColorCommand}"
+                                    Padding="12,8">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                    <FontIcon Glyph="&#xE768;" FontSize="14" />
+                                    <TextBlock Text="开始过滤" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Grid.Column="1"
+                            Width="1"
+                            Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
+
+                    <!-- 右侧：结果预览 -->
+                    <StackPanel Grid.Column="2">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <FontIcon Glyph="&#xE790;"
+                                      Margin="0,0,8,0"
+                                      FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="过滤结果"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="8"
+                                MinHeight="160">
+                            <Grid>
+                                <StackPanel HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind ViewModel.ResultPlaceholderVisibility, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE790;"
+                                              FontSize="32"
+                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                              HorizontalAlignment="Center" />
+                                    <TextBlock Text="过滤结果"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                               FontSize="11"
+                                               Margin="0,8,0,0"
+                                               HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <Image Source="{x:Bind ViewModel.ColorFilterResultImage, Mode=OneWay}"
+                                       Stretch="Uniform"
+                                       MaxHeight="300"
+                                       Visibility="{x:Bind ViewModel.ResultPreviewVisibility, Mode=OneWay}"
+                                       Tapped="PreviewImage_Tapped" />
+                            </Grid>
+                        </Border>
+
+                        <Border Margin="0,8,0,0"
+                                Padding="10,6"
+                                CornerRadius="4"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                Visibility="{x:Bind ViewModel.StatsVisibility, Mode=OneWay}"
+                                HorizontalAlignment="Stretch">
+                            <TextBlock Text="{x:Bind ViewModel.ColorFilterStats, Mode=OneWay}"
+                                       FontSize="11"
+                                       FontFamily="Consolas"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       HorizontalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 使用提示 -->
+            <Border Margin="0,12,0,16"
+                    Padding="12"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    CornerRadius="6"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <FontIcon Glyph="&#xE946;"
+                                  Margin="0,0,8,0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="使用提示"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 输入 6 位十六进制颜色值（如 ff0000 表示红色）" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 遮罩图像用于限定过滤区域，白色区域将被检测" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 阈值越大，匹配的颜色范围越广；建议从 15~30 开始调整" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
