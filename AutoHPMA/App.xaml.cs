@@ -86,6 +86,7 @@ public partial class App : Application
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IWindowInteractionService, WindowInteractionService>();
             services.AddSingleton<ITemplateMatchingService, TemplateMatchingService>();
+            services.AddSingleton<IContourDetectionService, ContourDetectionService>();
 
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();
@@ -102,6 +103,7 @@ public partial class App : Application
             services.AddTransient<MouseSimulationViewModel>();
             services.AddTransient<TextRecognitionViewModel>();
             services.AddTransient<TemplateMatchingViewModel>();
+            services.AddTransient<ContourDetectionViewModel>();
             services.AddTransient<HotkeySettingsViewModel>();
             services.AddTransient<HotkeySettingsPage>();
             services.AddTransient<NotificationSettingsViewModel>();
