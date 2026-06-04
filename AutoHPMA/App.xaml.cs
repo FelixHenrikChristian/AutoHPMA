@@ -85,6 +85,7 @@ public partial class App : Application
             // Core Services
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IWindowInteractionService, WindowInteractionService>();
+            services.AddSingleton<ITemplateMatchingService, TemplateMatchingService>();
 
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();
@@ -100,6 +101,7 @@ public partial class App : Application
             services.AddTransient<ScreenshotTestViewModel>();
             services.AddTransient<MouseSimulationViewModel>();
             services.AddTransient<TextRecognitionViewModel>();
+            services.AddTransient<TemplateMatchingViewModel>();
             services.AddTransient<HotkeySettingsViewModel>();
             services.AddTransient<HotkeySettingsPage>();
             services.AddTransient<NotificationSettingsViewModel>();

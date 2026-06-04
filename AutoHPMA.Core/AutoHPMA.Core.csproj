@@ -5,6 +5,7 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Platforms>x86;x64;arm64;AnyCPU</Platforms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,5 +14,6 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
   </ItemGroup>
 </Project>

@@ -6,12 +6,414 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="模板匹配" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="此处将放置模板/输入图像上传、参数设置、匹配结果。"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    <ScrollViewer Padding="0,16,8,0">
+        <StackPanel>
+            <!-- 输入图像卡片 -->
+            <Border Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <FontIcon Glyph="&#xEB9F;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="输入图像"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 源图像 -->
+                        <Border Grid.Column="0"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="源图像" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        CornerRadius="4"
+                                        MinHeight="100"
+                                        Padding="4">
+                                    <Grid>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind ViewModel.SourcePlaceholderVisibility, Mode=OneWay}">
+                                            <FontIcon Glyph="&#xEB9F;"
+                                                      FontSize="24"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center" />
+                                            <TextBlock Text="未选择"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <Image Source="{x:Bind ViewModel.SourceImagePreview, Mode=OneWay}"
+                                               Stretch="Uniform"
+                                               MaxHeight="100"
+                                               Visibility="{x:Bind ViewModel.SourcePreviewVisibility, Mode=OneWay}"
+                                               Tapped="PreviewImage_Tapped" />
+                                    </Grid>
+                                </Border>
+                                <Button Margin="0,8,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{x:Bind ViewModel.SelectSourceImageCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                        <TextBlock Text="选择源图" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 模板图像 -->
+                        <Border Grid.Column="2"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="模板图像" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        CornerRadius="4"
+                                        MinHeight="100"
+                                        Padding="4">
+                                    <Grid>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind ViewModel.TemplatePlaceholderVisibility, Mode=OneWay}">
+                                            <FontIcon Glyph="&#xEB9F;"
+                                                      FontSize="24"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center" />
+                                            <TextBlock Text="未选择"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <Image Source="{x:Bind ViewModel.TemplateImagePreview, Mode=OneWay}"
+                                               Stretch="Uniform"
+                                               MaxHeight="100"
+                                               Visibility="{x:Bind ViewModel.TemplatePreviewVisibility, Mode=OneWay}"
+                                               Tapped="PreviewImage_Tapped" />
+                                    </Grid>
+                                </Border>
+                                <Button Margin="0,8,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{x:Bind ViewModel.SelectTemplateImageCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                        <TextBlock Text="选择模板" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 遮罩图像（可选） -->
+                        <Border Grid.Column="4"
+                                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Padding="12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="遮罩图像" FontWeight="SemiBold" />
+                                    <TextBlock Text="（可选）"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                               Margin="4,0,0,0"
+                                               VerticalAlignment="Bottom" />
+                                </StackPanel>
+                                <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        CornerRadius="4"
+                                        MinHeight="100"
+                                        Padding="4">
+                                    <Grid>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind ViewModel.MaskPlaceholderVisibility, Mode=OneWay}">
+                                            <FontIcon Glyph="&#xEB9F;"
+                                                      FontSize="24"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center" />
+                                            <TextBlock Text="自动生成"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <Image Source="{x:Bind ViewModel.MaskImagePreview, Mode=OneWay}"
+                                               Stretch="Uniform"
+                                               MaxHeight="100"
+                                               Visibility="{x:Bind ViewModel.MaskPreviewVisibility, Mode=OneWay}"
+                                               Tapped="PreviewImage_Tapped" />
+                                    </Grid>
+                                </Border>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{x:Bind ViewModel.SelectMaskImageCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <FontIcon Glyph="&#xED25;" FontSize="14" />
+                                            <TextBlock Text="选择" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="2"
+                                            Command="{x:Bind ViewModel.ClearMaskCommand}"
+                                            ToolTipService.ToolTip="清除遮罩">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 匹配设置卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <FontIcon Glyph="&#xE713;"
+                                  Margin="0,0,8,0"
+                                  FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="匹配设置"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="12" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 匹配阈值 -->
+                        <Grid Grid.Row="0" Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="匹配阈值" />
+                                <TextBlock Text="值越高匹配越严格"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="11" />
+                            </StackPanel>
+                            <Slider Grid.Column="1"
+                                    Minimum="0"
+                                    Maximum="1"
+                                    StepFrequency="0.01"
+                                    Value="{x:Bind ViewModel.Threshold, Mode=TwoWay}"
+                                    VerticalAlignment="Center" />
+                            <Border Grid.Column="2"
+                                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                    CornerRadius="4"
+                                    Padding="8,4"
+                                    Margin="12,0,0,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind ViewModel.ThresholdText, Mode=OneWay}"
+                                           FontFamily="Consolas"
+                                           FontSize="13"
+                                           MinWidth="30"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+
+                        <!-- 匹配模式 -->
+                        <Grid Grid.Row="0" Grid.Column="1" Margin="24,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="匹配模式" />
+                                <TextBlock Text="选择算法类型"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="11" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      Width="180"
+                                      ItemsSource="{x:Bind ViewModel.MatchModes}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedMatchMode, Mode=TwoWay}" />
+                        </Grid>
+
+                        <!-- 开始匹配按钮 -->
+                        <StackPanel Grid.Row="2"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2"
+                                    Orientation="Horizontal"
+                                    Spacing="12"
+                                    HorizontalAlignment="Right">
+                            <ProgressRing Width="24"
+                                          Height="24"
+                                          IsActive="{x:Bind ViewModel.IsMatching, Mode=OneWay}"
+                                          Visibility="{x:Bind ViewModel.ProgressVisibility, Mode=OneWay}" />
+                            <Button Style="{ThemeResource AccentButtonStyle}"
+                                    Command="{x:Bind ViewModel.TemplateMatchCommand}"
+                                    Padding="20,10">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE768;" FontSize="16" />
+                                    <TextBlock Text="开始匹配" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 匹配结果卡片 -->
+            <Border Margin="0,12,0,0"
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <FontIcon Glyph="&#xF272;"
+                                      Margin="0,0,8,0"
+                                      FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="匹配结果"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                            <Border Margin="12,0,0,0"
+                                    Padding="8,4"
+                                    CornerRadius="10"
+                                    Background="{ThemeResource SystemAccentColor}"
+                                    Visibility="{x:Bind ViewModel.MatchActionsVisibility, Mode=OneWay}"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <TextBlock Text="找到 " Foreground="White" FontSize="11" />
+                                    <TextBlock Text="{x:Bind ViewModel.MatchCount, Mode=OneWay}" Foreground="White" FontSize="11" />
+                                    <TextBlock Text=" 处匹配" Foreground="White" FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Command="{x:Bind ViewModel.CropImageCommand}"
+                                Visibility="{x:Bind ViewModel.MatchActionsVisibility, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE8C6;" FontSize="14" />
+                                <TextBlock Text="裁切并保存" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- 结果图像预览区域 -->
+                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            CornerRadius="6"
+                            Padding="8"
+                            MinHeight="200">
+                        <Grid>
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind ViewModel.ResultPlaceholderVisibility, Mode=OneWay}">
+                                <FontIcon Glyph="&#xF272;"
+                                          FontSize="40"
+                                          Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                          HorizontalAlignment="Center" />
+                                <TextBlock Text="匹配结果将显示在这里"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,12,0,0"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+                            <Image Source="{x:Bind ViewModel.ResultImage, Mode=OneWay}"
+                                   Stretch="Uniform"
+                                   MaxHeight="450"
+                                   Visibility="{x:Bind ViewModel.ResultPreviewVisibility, Mode=OneWay}"
+                                   Tapped="PreviewImage_Tapped" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 坐标详情 -->
+                    <Expander Margin="0,12,0,0" IsExpanded="False">
+                        <Expander.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8FD;" FontSize="14" />
+                                <TextBlock Text="匹配坐标详情" />
+                            </StackPanel>
+                        </Expander.Header>
+                        <TextBox Text="{x:Bind ViewModel.MatchRectInfo, Mode=OneWay}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MaxHeight="120"
+                                 IsReadOnly="True"
+                                 FontFamily="Consolas"
+                                 FontSize="12"
+                                 PlaceholderText="暂无匹配结果" />
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- 使用提示 -->
+            <Border Margin="0,12,0,16"
+                    Padding="12"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    CornerRadius="6"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <FontIcon Glyph="&#xE946;"
+                                  Margin="0,0,8,0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="使用提示"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 选择源图像和模板图像后点击「开始匹配」进行模板匹配" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 如果模板包含透明通道（PNG），会自动生成遮罩；也可手动选择遮罩文件" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="• 推荐使用 CCoeffNormed 模式，阈值建议设置在 0.8~0.95 之间" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
