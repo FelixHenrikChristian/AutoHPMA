@@ -65,32 +65,72 @@
                 </StackPanel>
             </Border>
 
-            <!-- 操作 -->
+            <!-- 实时预览 -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Padding="20">
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="实时预览" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBlock Text="打开独立窗口对所选窗口进行实时录屏，可保存当前帧。"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                   FontSize="12" />
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE768;" FontSize="16"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="实时预览"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
                     </StackPanel>
-                    <Button Grid.Column="1"
-                            Style="{ThemeResource AccentButtonStyle}"
-                            Command="{x:Bind ViewModel.StartPreviewCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE768;" FontSize="14" />
-                            <TextBlock Text="开始预览" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="打开独立窗口对所选窗口进行实时录屏，可保存当前帧。"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                        <Button Grid.Column="1"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Command="{x:Bind ViewModel.StartPreviewCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE768;" FontSize="14" />
+                                <TextBlock Text="开始预览" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 使用提示 -->
+            <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <FontIcon Glyph="&#xE946;"
+                                  Margin="0,0,8,0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="使用提示"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="1. 选择合适的截屏方式，推荐使用 BitBlt 或 Windows Graphics Capture 方式" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="2. 从窗口列表中选择目标游戏窗口，若未显示请点击刷新按钮" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Text="3. 点击开始预览按钮查看实时截屏效果，验证截图质量和帧率" />
+                </StackPanel>
             </Border>
         </StackPanel>
     </ScrollViewer>
