@@ -96,7 +96,7 @@ public partial class App : Application
             services.AddTransient<HomePage>();
             services.AddTransient<TaskViewModel>();
             services.AddTransient<TaskPage>();
-            services.AddTransient<LogViewModel>();
+            services.AddSingleton<LogViewModel>();
             services.AddTransient<LogPage>();
             services.AddTransient<TestViewModel>();
             services.AddTransient<TestPage>();
@@ -124,7 +124,7 @@ public partial class App : Application
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         Log.Fatal(e.Exception, "未处理异常: {Message}", e.Message);
-        Log.CloseAndFlush();
+        LoggingHelper.CloseAndFlush();
     }
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)

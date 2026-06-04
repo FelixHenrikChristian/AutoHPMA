@@ -5,7 +5,6 @@ using System.Reflection;
 using AutoHPMA.Services.Logging;
 
 using Serilog;
-using Serilog.Core;
 using Serilog.Events;
 
 using Windows.ApplicationModel;
@@ -24,34 +23,10 @@ public static class LoggingHelper
     public static string LogDirectory { get; } = ResolveLogDirectory();
 
     /// <summary>
-    /// 运行时可调的全局最低日志级别开关。默认 <see cref="LogEventLevel.Information"/>。
-    /// 打开"诊断模式"时切到 <see cref="LogEventLevel.Debug"/>，立即生效、无需重启。
-    /// </summary>
-    public static LoggingLevelSwitch LevelSwitch { get; } = new LoggingLevelSwitch(LogEventLevel.Information);
-
-    /// <summary>
-    /// 诊断模式下使用的级别（即"详细日志"的含义）。
-    /// </summary>
-    public const LogEventLevel DiagnosticLevel = LogEventLevel.Debug;
-
-    /// <summary>
-    /// 正常模式下的级别。
-    /// </summary>
-    public const LogEventLevel NormalLevel = LogEventLevel.Information;
-
-    /// <summary>
-    /// 设置或取消诊断模式。线程安全，立即生效。
-    /// </summary>
-    public static void SetDiagnosticMode(bool enabled)
-    {
-        LevelSwitch.MinimumLevel = enabled ? DiagnosticLevel : NormalLevel;
-    }
-
-    /// <summary>
     /// 内存日志缓冲，用于日志页实时展示。
     /// 在 <see cref="ConfigureSerilog"/> 执行后即可使用。
     /// </summary>
-    public static InMemoryLogSink LogBuffer { get; } = new InMemoryLogSink(2000);
+    public static InMemoryLogSink LogBuffer { get; } = new(2000);
 
     /// <summary>
     /// 配置 Serilog 静态 Logger。应在 Host 构建之前调用一次。
@@ -63,13 +38,8 @@ public static class LoggingHelper
         const string outputTemplate =
             "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}";
 
-#if DEBUG
-        // 开发构建默认放到 Debug，便于本地排查。
-        LevelSwitch.MinimumLevel = DiagnosticLevel;
-#endif
-
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.ControlledBy(LevelSwitch)
+            .MinimumLevel.Is(LogEventLevel.Debug)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .Enrich.FromLogContext()
@@ -104,6 +74,7 @@ public static class LoggingHelper
         Log.Information("版本: v{Version:l}  运行模式: {Mode:l}  架构: {Arch}", version, isMsix ? "MSIX" : "Unpackaged", arch);
         Log.Information("运行时: {Framework:l}", framework);
         Log.Information("操作系统: {OS:l}", os);
+        Log.Information("日志目录: {LogDirectory:l}", LogDirectory);
     }
 
     /// <summary>

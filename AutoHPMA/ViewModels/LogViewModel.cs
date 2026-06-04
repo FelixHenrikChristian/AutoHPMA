@@ -36,7 +36,7 @@ public partial class LogViewModel : ObservableRecipient
     /// </summary>
     public ObservableCollection<LogEntry> Entries { get; } = new();
 
-    [ObservableProperty] private bool _showDebug = true;
+    [ObservableProperty] private bool _showDebug;
     [ObservableProperty] private bool _showInformation = true;
     [ObservableProperty] private bool _showWarning = true;
     [ObservableProperty] private bool _showError = true;
