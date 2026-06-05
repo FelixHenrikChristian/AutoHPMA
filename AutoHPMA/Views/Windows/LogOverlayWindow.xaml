@@ -29,14 +29,14 @@
                     <Border
                         Padding="8,4,8,4"
                         VerticalAlignment="Center"
-                        Background="#2520E830"
+                        Background="#2520D8E8"
                         CornerRadius="6">
                         <StackPanel Orientation="Horizontal">
                             <FontIcon
                                 VerticalAlignment="Center"
                                 FontFamily="{StaticResource SymbolThemeFontFamily}"
                                 FontSize="14"
-                                Foreground="#80FF80"
+                                Foreground="#80E0FF"
                                 Glyph="&#xE121;" />
                             <TextBlock
                                 Margin="6,0,0,0"
@@ -44,7 +44,7 @@
                                 FontFamily="Consolas"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                Foreground="#90EE90"
+                                Foreground="#B0E0FF"
                                 Text="{Binding TimeNow}" />
                         </StackPanel>
                     </Border>
@@ -77,7 +77,7 @@
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                             <GradientStop Color="Transparent" Offset="0" />
-                            <GradientStop Color="#4090EE90" Offset="0.2" />
+                            <GradientStop Color="#4080E0FF" Offset="0.2" />
                             <GradientStop Color="#4080E0FF" Offset="0.8" />
                             <GradientStop Color="Transparent" Offset="1" />
                         </LinearGradientBrush>

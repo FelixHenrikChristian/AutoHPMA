@@ -41,7 +41,7 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
         TaskCancellationToken = cancellationToken;
 
         Context.Overlay.SetGameState(DisplayName);
-        Logger.LogInformation("{TaskName} task started.", DisplayName);
+        Logger.LogInformation("=== [Cyan]{TaskName}[/Cyan] 任务已启动 ===", DisplayName);
 
         try
         {
@@ -54,7 +54,7 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
             Context.Overlay.ClearStateIndicatorRegions();
             Context.Overlay.SetGameState("空闲");
             DisposeOwnedResources();
-            Logger.LogInformation("{TaskName} task stopped.", DisplayName);
+            Logger.LogInformation("=== [Cyan]{TaskName}[/Cyan] 任务已停止 ===", DisplayName);
         }
     }
 
@@ -198,7 +198,7 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogDebug(ex, "Task state monitor failed.");
+                    Logger.LogDebug(ex, "任务状态监测失败。");
                 }
             }
         }, token);

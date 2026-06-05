@@ -90,8 +90,9 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
                 _overlayWindowService.Start(target, options);
                 StartMonitorTimer(options.StateMonitorInterval);
 
-                _logger.LogInformation(
-                    "Automation runtime started. Provider={Provider}, Client={Client}, DisplayHwnd=0x{DisplayHwnd:X}, GameHwnd=0x{GameHwnd:X}",
+                _logger.LogInformation("截图器已启动：[Cyan]{Target}[/Cyan]", target.DisplayName);
+                _logger.LogDebug(
+                    "自动化运行时已启动。Provider={Provider}, Client={Client}, DisplayHwnd=0x{DisplayHwnd:X}, GameHwnd=0x{GameHwnd:X}",
                     target.ProviderName,
                     target.ClientKind,
                     target.DisplayWindow.Handle.ToInt64(),
@@ -219,7 +220,7 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
 
         if (wasRunning)
         {
-            _logger.LogInformation("Automation runtime stopped.");
+            _logger.LogInformation("截图器已停止。");
             RaiseStateChanged();
         }
     }

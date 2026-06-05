@@ -177,9 +177,10 @@
                                 Grid.Column="3"
                                 FontFamily="Consolas"
                                 FontSize="12"
-                                Text="{x:Bind Message}"
                                 TextWrapping="Wrap"
-                                IsTextSelectionEnabled="True" />
+                                IsTextSelectionEnabled="True"
+                                Loaded="OnLogMessageTextLoaded"
+                                DataContextChanged="OnLogMessageTextDataContextChanged" />
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

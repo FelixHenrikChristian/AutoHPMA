@@ -74,7 +74,7 @@ public sealed class HotkeyService : IHotkeyService
             _thread.SetApartmentState(ApartmentState.STA);
             _thread.Start();
             ready.Wait();
-            _logger.LogInformation("HotkeyService started on thread {ThreadId}", _threadId);
+            _logger.LogDebug("热键服务已启动，线程 ID={ThreadId}。", _threadId);
         }
     }
 
@@ -100,7 +100,7 @@ public sealed class HotkeyService : IHotkeyService
             PostThreadMessage(tid, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         }
         thread?.Join(TimeSpan.FromSeconds(2));
-        _logger.LogInformation("HotkeyService stopped");
+        _logger.LogDebug("热键服务已停止。");
     }
 
     public Guid Register(HotkeyDefinition definition, HotkeyScope scope, Action handler, bool consumeKey = true)
@@ -175,7 +175,7 @@ public sealed class HotkeyService : IHotkeyService
             0);
         if (_hookHandle == IntPtr.Zero)
         {
-            _logger.LogError("Failed to install low-level keyboard hook (Win32 error {Error})",
+            _logger.LogError("安装低级键盘钩子失败（Win32 错误 {Error}）。",
                 Marshal.GetLastWin32Error());
         }
 
@@ -207,7 +207,7 @@ public sealed class HotkeyService : IHotkeyService
                 while (_pendingWork.TryDequeue(out var work))
                 {
                     try { work(); }
-                    catch (Exception ex) { _logger.LogError(ex, "Hotkey thread work failed"); }
+                    catch (Exception ex) { _logger.LogError(ex, "热键线程任务执行失败。"); }
                 }
             }
             else
@@ -243,7 +243,7 @@ public sealed class HotkeyService : IHotkeyService
             int id = ++_nextNativeId;
             if (!RegisterHotKey(IntPtr.Zero, id, (uint)reg.Definition.Modifiers, reg.Definition.VirtualKey))
             {
-                _logger.LogWarning("RegisterHotKey failed for {Hotkey} (Win32 error {Error}). Removing.",
+                _logger.LogWarning("注册全局热键失败：{Hotkey}（Win32 错误 {Error}），已移除。",
                     reg.Definition, Marshal.GetLastWin32Error());
                 _registrations.TryRemove(reg.Id, out _);
                 return;
@@ -253,12 +253,12 @@ public sealed class HotkeyService : IHotkeyService
             {
                 _nativeIdToRegistration[id] = reg;
             }
-            _logger.LogInformation("Registered global hotkey {Hotkey}", reg.Definition);
+            _logger.LogDebug("已注册全局热键：{Hotkey}", reg.Definition);
         }
         else
         {
             // GameWindow scope is purely driven by the LL hook lookup over _registrations.
-            _logger.LogInformation("Registered scoped hotkey {Hotkey} (consume={Consume})",
+            _logger.LogDebug("已注册游戏窗口热键：{Hotkey}（Consume={Consume}）",
                 reg.Definition, reg.ConsumeKey);
         }
     }
@@ -375,7 +375,7 @@ public sealed class HotkeyService : IHotkeyService
             try { reg.Handler(); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Hotkey handler threw for {Hotkey}", reg.Definition);
+                _logger.LogError(ex, "热键处理程序执行失败：{Hotkey}", reg.Definition);
             }
         });
     }

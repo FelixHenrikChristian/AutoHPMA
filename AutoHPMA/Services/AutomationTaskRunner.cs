@@ -112,7 +112,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start automation task {TaskType}.", request.TaskType);
+            _logger.LogError(ex, "启动自动化任务失败：{TaskType}", request.TaskType);
             return Task.FromResult(AutomationTaskStartResult.Failure(
                 request.TaskType,
                 "任务启动失败",
@@ -145,7 +145,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Automation task stop observed a task exception.");
+            _logger.LogDebug(ex, "停止自动化任务时检测到任务异常。");
         }
     }
 
@@ -171,7 +171,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Automation task {TaskName} failed.", activeTask.AutomationTask.DisplayName);
+            _logger.LogError(ex, "自动化任务执行失败：{TaskName}", activeTask.AutomationTask.DisplayName);
         }
         finally
         {

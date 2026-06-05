@@ -1,18 +1,14 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text.RegularExpressions;
 using AutoHPMA.Helpers;
 using AutoHPMA.Models;
-using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Serilog.Events;
 using Windows.Foundation;
-using Windows.UI;
 
 namespace AutoHPMA.Views.Windows;
 
@@ -21,7 +17,6 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
     private const int MaxLogCount = 100;
     private const double MarqueeViewWidth = 230;
     private const double MarqueePauseSeconds = 1.5;
-    private static readonly Regex MarkupRegex = new(@"\[(?<name>[A-Za-z]+)\](?<text>.*?)\[/\k<name>\]", RegexOptions.Compiled);
 
     private readonly DispatcherQueue _dispatcher;
     private readonly DispatcherQueueTimer _timeTimer;
@@ -171,7 +166,20 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
     {
         if (LogListView.Items.Count > 0)
         {
-            LogListView.ScrollIntoView(LogListView.Items[^1]);
+            _dispatcher.TryEnqueue(() =>
+            {
+                if (_isClosed || LogListView.Items.Count == 0)
+                {
+                    return;
+                }
+
+                LogListView.UpdateLayout();
+                LogListView.ScrollIntoView(LogListView.Items[^1], ScrollIntoViewAlignment.Leading);
+                if (FindScrollViewer(LogListView) is { } scrollViewer)
+                {
+                    scrollViewer.ChangeView(null, scrollViewer.ScrollableHeight, null, disableAnimation: true);
+                }
+            });
         }
     }
 
@@ -195,7 +203,7 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
             return;
         }
 
-        ApplyFormattedMessage(textBlock, entry.Message);
+        LogMessageFormatter.Apply(textBlock, entry.Message);
 
         if (!ShowMarquee)
         {
@@ -225,57 +233,6 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
         {
             Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height),
         };
-    }
-
-    private static void ApplyFormattedMessage(TextBlock textBlock, string message)
-    {
-        textBlock.Inlines.Clear();
-
-        var last = 0;
-        foreach (Match match in MarkupRegex.Matches(message))
-        {
-            if (match.Index > last)
-            {
-                textBlock.Inlines.Add(new Run { Text = message[last..match.Index] });
-            }
-
-            var run = new Run { Text = match.Groups["text"].Value };
-            if (TryCreateBrush(match.Groups["name"].Value, out var brush))
-            {
-                run.Foreground = brush;
-            }
-
-            textBlock.Inlines.Add(run);
-            last = match.Index + match.Length;
-        }
-
-        if (last < message.Length)
-        {
-            textBlock.Inlines.Add(new Run { Text = message[last..] });
-        }
-    }
-
-    private static bool TryCreateBrush(string name, out SolidColorBrush brush)
-    {
-        Color? color = name.ToLowerInvariant() switch
-        {
-            "yellow" => Color.FromArgb(0xFF, 0xFA, 0xCC, 0x15),
-            "lime" => Color.FromArgb(0xFF, 0x84, 0xCC, 0x16),
-            "aquamarine" => Color.FromArgb(0xFF, 0x7F, 0xFF, 0xD4),
-            "red" => Color.FromArgb(0xFF, 0xF8, 0x71, 0x71),
-            "green" => Color.FromArgb(0xFF, 0x22, 0xC5, 0x5E),
-            "blue" => Color.FromArgb(0xFF, 0x60, 0xA5, 0xFA),
-            _ => default,
-        };
-
-        if (color is not { } resolvedColor)
-        {
-            brush = new SolidColorBrush(Colors.Transparent);
-            return false;
-        }
-
-        brush = new SolidColorBrush(resolvedColor);
-        return true;
     }
 
     private static void StartMarquee(TextBlock textBlock, Canvas canvas)
@@ -321,4 +278,23 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
 
     private void OnPropertyChanged(string propertyName) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        if (root is ScrollViewer scrollViewer)
+        {
+            return scrollViewer;
+        }
+
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < childCount; i++)
+        {
+            if (FindScrollViewer(VisualTreeHelper.GetChild(root, i)) is { } childScrollViewer)
+            {
+                return childScrollViewer;
+            }
+        }
+
+        return null;
+    }
 }
