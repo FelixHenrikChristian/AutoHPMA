@@ -10,6 +10,9 @@ public sealed class WindowInteractionService : IWindowInteractionService
     private const uint WmMouseMove = 0x0200;
     private const uint WmLButtonDown = 0x0201;
     private const uint WmLButtonUp = 0x0202;
+    private const uint WmKeyDown = 0x0100;
+    private const uint WmKeyUp = 0x0101;
+    private const uint MapVkToVsc = 0x00;
     private static readonly IntPtr MkLButton = new(0x0001);
 
     public async Task ExecuteAsync(IntPtr hWnd, MouseActionOptions options, CancellationToken cancellationToken = default)
@@ -45,6 +48,32 @@ public sealed class WindowInteractionService : IWindowInteractionService
             {
                 await DelayIfPositiveAsync(options.RepeatIntervalMilliseconds, cancellationToken);
             }
+        }
+    }
+
+    public async Task SendKeyAsync(IntPtr hWnd, int virtualKey, CancellationToken cancellationToken = default)
+    {
+        EnsureWindows();
+        ValidateHandle(hWnd);
+
+        if (virtualKey <= 0 || virtualKey > ushort.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(virtualKey), "Virtual key must fit in a Win32 message.");
+        }
+
+        var scanCode = MapVirtualKey((uint)virtualKey, MapVkToVsc);
+        var lParamDown = (IntPtr)(1 | (scanCode << 16));
+        var lParamUp = (IntPtr)(unchecked((int)0xC0000001) | ((int)scanCode << 16));
+
+        PostWindowMessage(hWnd, WmKeyDown, (IntPtr)virtualKey, lParamDown);
+
+        try
+        {
+            await DelayIfPositiveAsync(50, cancellationToken);
+        }
+        finally
+        {
+            PostWindowMessage(hWnd, WmKeyUp, (IntPtr)virtualKey, lParamUp);
         }
     }
 
@@ -199,4 +228,7 @@ public sealed class WindowInteractionService : IWindowInteractionService
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 }

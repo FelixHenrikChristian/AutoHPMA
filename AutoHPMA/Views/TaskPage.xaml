@@ -5,7 +5,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Loaded="OnLoaded">
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
         <StackPanel Margin="40,30,40,30">
@@ -48,8 +49,8 @@
                                 <FontIcon
                                     FontFamily="{StaticResource SymbolThemeFontFamily}"
                                     FontSize="16"
-                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                                    Glyph="{x:Bind ViewModel.AutoClubQuizButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoClubQuizButtonText, Mode=OneWay}" />
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -183,8 +184,8 @@
                                 <FontIcon
                                     FontFamily="{StaticResource SymbolThemeFontFamily}"
                                     FontSize="16"
-                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                                    Glyph="{x:Bind ViewModel.AutoForbiddenForestButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoForbiddenForestButtonText, Mode=OneWay}" />
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -272,8 +273,8 @@
                                 <FontIcon
                                     FontFamily="{StaticResource SymbolThemeFontFamily}"
                                     FontSize="16"
-                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                                    Glyph="{x:Bind ViewModel.AutoCookingButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoCookingButtonText, Mode=OneWay}" />
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -366,8 +367,8 @@
                                 <FontIcon
                                     FontFamily="{StaticResource SymbolThemeFontFamily}"
                                     FontSize="16"
-                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                                    Glyph="{x:Bind ViewModel.AutoSweetAdventureButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoSweetAdventureButtonText, Mode=OneWay}" />
                             </StackPanel>
                         </Button>
                     </Grid>

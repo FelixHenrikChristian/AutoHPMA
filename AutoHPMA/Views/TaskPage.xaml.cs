@@ -18,5 +18,10 @@ public sealed partial class TaskPage : Page
     {
         await ViewModel.LoadAsync();
     }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.Dispose();
+    }
 }
 

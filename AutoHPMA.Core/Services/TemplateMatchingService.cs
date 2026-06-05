@@ -37,6 +37,47 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
             maskMat is null || maskMat.Empty() ? null : EncodePng(maskMat));
     }
 
+    public TemplateSearchResult Search(
+        Mat sourceMat,
+        Mat templateMat,
+        TemplateSearchOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(sourceMat);
+        ArgumentNullException.ThrowIfNull(templateMat);
+
+        options ??= new TemplateSearchOptions();
+        ValidateSearchInput(sourceMat, templateMat, options);
+
+        using var templateBgr = ConvertTemplateToBgr(templateMat);
+        ValidateTemplateSize(sourceMat, templateBgr);
+        using var generatedMask = options.Mask is null && options.UseAlphaMask
+            ? GenerateAlphaMask(templateMat)
+            : null;
+        using var resultRoiMask = CreateResultRoiMask(
+            options.SourceMask,
+            sourceMat.Width,
+            sourceMat.Height,
+            templateBgr.Width,
+            templateBgr.Height);
+
+        var maxCount = options.FindMultiple
+            ? options.MaxCount ?? CalculateDefaultMaxCount(sourceMat, templateBgr)
+            : 1;
+
+        var regions = MatchRegions(
+            sourceMat,
+            templateBgr,
+            options.MatchMode,
+            options.Threshold,
+            maxCount,
+            options.Mask ?? generatedMask,
+            resultRoiMask);
+
+        return regions.Count == 0
+            ? TemplateSearchResult.Failed
+            : new TemplateSearchResult(regions);
+    }
+
     public IReadOnlyList<string> CropMatches(string sourceImagePath, IReadOnlyList<TemplateMatchRegion> regions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceImagePath);
@@ -97,6 +138,29 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         if (request.MaxCount <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(request.MaxCount), "Max count must be greater than zero.");
+        }
+    }
+
+    private static void ValidateSearchInput(Mat sourceMat, Mat templateMat, TemplateSearchOptions options)
+    {
+        if (sourceMat.Empty())
+        {
+            throw new ArgumentException("Source image cannot be empty.", nameof(sourceMat));
+        }
+
+        if (templateMat.Empty())
+        {
+            throw new ArgumentException("Template image cannot be empty.", nameof(templateMat));
+        }
+
+        if (options.Threshold is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.Threshold), "Threshold must be between 0 and 1.");
+        }
+
+        if (options.MaxCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.MaxCount), "Max count must be greater than zero.");
         }
     }
 
@@ -198,7 +262,8 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         TemplateMatchModes matchMode,
         double threshold,
         int maxCount,
-        Mat? maskMat)
+        Mat? maskMat,
+        Mat? resultRoiMask = null)
     {
         using var result = new Mat();
         if (maskMat is null)
@@ -220,7 +285,19 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
             Cv2.Normalize(result, result, 0, 1, NormTypes.MinMax);
         }
 
-        using var searchMask = new Mat(result.Height, result.Width, MatType.CV_8UC1, Scalar.White);
+        if (result.Empty())
+        {
+            return [];
+        }
+
+        using var searchMask = resultRoiMask is not null && !resultRoiMask.Empty()
+            ? resultRoiMask.Clone()
+            : new Mat(result.Height, result.Width, MatType.CV_8UC1, Scalar.White);
+        if (searchMask.Empty())
+        {
+            return [];
+        }
+
         var regions = new List<TemplateMatchRegion>();
 
         while (regions.Count < maxCount && Cv2.CountNonZero(searchMask) > 0)
@@ -247,6 +324,64 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         }
 
         return regions;
+    }
+
+    private static Mat? CreateResultRoiMask(
+        Mat? sourceMask,
+        int sourceWidth,
+        int sourceHeight,
+        int templateWidth,
+        int templateHeight)
+    {
+        if (sourceMask is null)
+        {
+            return null;
+        }
+
+        Mat mask = sourceMask;
+        var disposeMask = false;
+        if (sourceMask.Width != sourceWidth || sourceMask.Height != sourceHeight)
+        {
+            mask = new Mat();
+            Cv2.Resize(sourceMask, mask, new Size(sourceWidth, sourceHeight));
+            disposeMask = true;
+        }
+
+        try
+        {
+            var resultWidth = sourceWidth - templateWidth + 1;
+            var resultHeight = sourceHeight - templateHeight + 1;
+            if (resultWidth <= 0 || resultHeight <= 0)
+            {
+                return new Mat();
+            }
+
+            using var kernel = Cv2.GetStructuringElement(
+                MorphShapes.Rect,
+                new Size(templateWidth, templateHeight));
+            using var eroded = new Mat();
+            Cv2.Erode(mask, eroded, kernel);
+
+            var resultRoi = new Mat(resultHeight, resultWidth, MatType.CV_8UC1);
+            var halfTemplateHeight = templateHeight / 2;
+            var halfTemplateWidth = templateWidth / 2;
+            for (var y = 0; y < resultHeight; y++)
+            {
+                for (var x = 0; x < resultWidth; x++)
+                {
+                    resultRoi.Set(y, x, eroded.At<byte>(y + halfTemplateHeight, x + halfTemplateWidth));
+                }
+            }
+
+            return resultRoi;
+        }
+        finally
+        {
+            if (disposeMask)
+            {
+                mask.Dispose();
+            }
+        }
     }
 
     private static Rect ClampRectToMat(Rect rect, Mat mat)

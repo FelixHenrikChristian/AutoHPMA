@@ -11,7 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace AutoHPMA.ViewModels;
 
-public partial class TaskViewModel : ObservableRecipient
+public partial class TaskViewModel : ObservableRecipient, IDisposable
 {
     private const double DefaultAnswerDelay = 0;
     private const double DefaultForbiddenForestTimes = 30;
@@ -20,18 +20,24 @@ public partial class TaskViewModel : ObservableRecipient
     private const string DefaultCookingDish = "海鱼黄金焗饭";
 
     private readonly ILocalSettingsService _localSettingsService;
+    private readonly IAutomationTaskRunner _taskRunner;
     private readonly IInfoBarNotificationService _infoBar;
     private readonly ILogger<TaskViewModel> _logger;
     private bool _suppressSettingPersistence;
 
     public TaskViewModel(
         ILocalSettingsService localSettingsService,
+        IAutomationTaskRunner taskRunner,
         IInfoBarNotificationService infoBar,
         ILogger<TaskViewModel> logger)
     {
         _localSettingsService = localSettingsService;
+        _taskRunner = taskRunner;
         _infoBar = infoBar;
         _logger = logger;
+
+        _taskRunner.StateChanged += OnTaskRunnerStateChanged;
+        CurrentTaskType = _taskRunner.CurrentState.CurrentTaskType;
 
         TeamPositions =
         [
@@ -47,11 +53,27 @@ public partial class TaskViewModel : ObservableRecipient
 
     public ObservableCollection<string> Dishes { get; }
 
-    public bool TaskCommandsEnabled => false;
+    public bool TaskCommandsEnabled => true;
 
-    public string StartButtonText => "启动";
+    public string StartButtonText => CurrentTaskType == AutomationTaskType.None ? "启动" : "停止";
 
-    public string StartButtonGlyph => "\uE768";
+    public string StartButtonGlyph => CurrentTaskType == AutomationTaskType.None ? "\uE768" : "\uE711";
+
+    public string AutoClubQuizButtonText => GetTaskButtonText(AutomationTaskType.AutoClubQuiz);
+
+    public string AutoClubQuizButtonGlyph => GetTaskButtonGlyph(AutomationTaskType.AutoClubQuiz);
+
+    public string AutoForbiddenForestButtonText => GetTaskButtonText(AutomationTaskType.AutoForbiddenForest);
+
+    public string AutoForbiddenForestButtonGlyph => GetTaskButtonGlyph(AutomationTaskType.AutoForbiddenForest);
+
+    public string AutoCookingButtonText => GetTaskButtonText(AutomationTaskType.AutoCooking);
+
+    public string AutoCookingButtonGlyph => GetTaskButtonGlyph(AutomationTaskType.AutoCooking);
+
+    public string AutoSweetAdventureButtonText => GetTaskButtonText(AutomationTaskType.AutoSweetAdventure);
+
+    public string AutoSweetAdventureButtonGlyph => GetTaskButtonGlyph(AutomationTaskType.AutoSweetAdventure);
 
     [ObservableProperty]
     public partial AutomationTaskType CurrentTaskType { get; set; } = AutomationTaskType.None;
@@ -79,6 +101,10 @@ public partial class TaskViewModel : ObservableRecipient
 
     public async Task LoadAsync()
     {
+        _taskRunner.StateChanged -= OnTaskRunnerStateChanged;
+        _taskRunner.StateChanged += OnTaskRunnerStateChanged;
+        CurrentTaskType = _taskRunner.CurrentState.CurrentTaskType;
+
         _suppressSettingPersistence = true;
         try
         {
@@ -101,16 +127,35 @@ public partial class TaskViewModel : ObservableRecipient
     }
 
     [RelayCommand]
-    private void AutoClubQuizToggle() => ShowTaskSkeletonNotice("自动社团答题");
+    private Task AutoClubQuizToggleAsync() =>
+        ToggleTaskAsync(
+            AutomationTaskType.AutoClubQuiz,
+            new ClubQuizTaskOptions(
+                (int)NormalizeNonNegative(AnswerDelay),
+                JoinOthers,
+                StopWhenContributionFull));
 
     [RelayCommand]
-    private void AutoForbiddenForestToggle() => ShowTaskSkeletonNotice("自动禁林探索");
+    private Task AutoForbiddenForestToggleAsync() =>
+        ToggleTaskAsync(
+            AutomationTaskType.AutoForbiddenForest,
+            new ForbiddenForestTaskOptions(
+                (int)NormalizePositive(AutoForbiddenForestTimes),
+                string.Equals(SelectedTeamPosition, TeamPositions[0], StringComparison.Ordinal)));
 
     [RelayCommand]
-    private void AutoCookingToggle() => ShowTaskSkeletonNotice("自动巫师烹饪");
+    private Task AutoCookingToggleAsync() =>
+        ToggleTaskAsync(
+            AutomationTaskType.AutoCooking,
+            new CookingTaskOptions(
+                (int)NormalizePositive(AutoCookingTimes),
+                NormalizeDish(AutoCookingSelectedDish)));
 
     [RelayCommand]
-    private void AutoSweetAdventureToggle() => ShowTaskSkeletonNotice("自动甜蜜冒险");
+    private Task AutoSweetAdventureToggleAsync() =>
+        ToggleTaskAsync(
+            AutomationTaskType.AutoSweetAdventure,
+            new SweetAdventureTaskOptions());
 
     [RelayCommand]
     private void OpenQuestionBank()
@@ -157,11 +202,82 @@ public partial class TaskViewModel : ObservableRecipient
     partial void OnAutoCookingSelectedDishChanged(string value) =>
         PersistSetting(SettingsKeys.TaskCookingSelectedDish, NormalizeDish(value));
 
-    private void ShowTaskSkeletonNotice(string taskName) =>
-        _infoBar.Show(
-            InfoBarSeverity.Informational,
-            "任务骨架已迁移",
-            $"{taskName} 的页面入口和参数已经就位，任务运行逻辑将在下一步接入。");
+    partial void OnCurrentTaskTypeChanged(AutomationTaskType value) =>
+        NotifyTaskButtonStateChanged();
+
+    public void Dispose()
+    {
+        _taskRunner.StateChanged -= OnTaskRunnerStateChanged;
+    }
+
+    private async Task ToggleTaskAsync(AutomationTaskType taskType, AutomationTaskOptions options)
+    {
+        try
+        {
+            var currentState = _taskRunner.CurrentState;
+            if (currentState.IsRunning && currentState.CurrentTaskType == taskType)
+            {
+                await StopTaskAsync();
+                return;
+            }
+
+            var result = await _taskRunner.StartAsync(new AutomationTaskStartRequest(taskType, options));
+            CurrentTaskType = _taskRunner.CurrentState.CurrentTaskType;
+
+            _infoBar.Show(
+                result.Succeeded ? InfoBarSeverity.Success : InfoBarSeverity.Warning,
+                result.Title,
+                result.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "任务切换失败：{TaskType}", taskType);
+            _infoBar.Show(InfoBarSeverity.Error, "任务操作失败", ex.Message);
+        }
+    }
+
+    private async Task StopTaskAsync()
+    {
+        try
+        {
+            await _taskRunner.StopAsync();
+            CurrentTaskType = _taskRunner.CurrentState.CurrentTaskType;
+            _infoBar.Show(InfoBarSeverity.Informational, "已停止", "任务已停止。");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "停止任务失败");
+            _infoBar.Show(InfoBarSeverity.Error, "停止失败", ex.Message);
+        }
+    }
+
+    private void OnTaskRunnerStateChanged(object? sender, EventArgs e)
+    {
+        var state = _taskRunner.CurrentState;
+        var dispatcherQueue = App.MainWindow.DispatcherQueue;
+        _ = dispatcherQueue.TryEnqueue(() => CurrentTaskType = state.CurrentTaskType);
+    }
+
+    private string GetTaskButtonText(AutomationTaskType taskType) =>
+        CurrentTaskType == taskType ? "停止" : "启动";
+
+    private string GetTaskButtonGlyph(AutomationTaskType taskType) =>
+        CurrentTaskType == taskType ? "\uE711" : "\uE768";
+
+    private void NotifyTaskButtonStateChanged()
+    {
+        OnPropertyChanged(nameof(TaskCommandsEnabled));
+        OnPropertyChanged(nameof(StartButtonText));
+        OnPropertyChanged(nameof(StartButtonGlyph));
+        OnPropertyChanged(nameof(AutoClubQuizButtonText));
+        OnPropertyChanged(nameof(AutoClubQuizButtonGlyph));
+        OnPropertyChanged(nameof(AutoForbiddenForestButtonText));
+        OnPropertyChanged(nameof(AutoForbiddenForestButtonGlyph));
+        OnPropertyChanged(nameof(AutoCookingButtonText));
+        OnPropertyChanged(nameof(AutoCookingButtonGlyph));
+        OnPropertyChanged(nameof(AutoSweetAdventureButtonText));
+        OnPropertyChanged(nameof(AutoSweetAdventureButtonGlyph));
+    }
 
     private void ReloadDishes()
     {
