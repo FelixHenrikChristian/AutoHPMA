@@ -13,4 +13,11 @@ internal static class SettingsKeys
     public const string HomeMaskWindowShowTextLabels = "HomeMaskWindowShowTextLabels";
     public const string HomeStateMonitorInterval = "HomeStateMonitorInterval";
     public const string HomeSelectedOcrEngine = "HomeSelectedOcrEngine";
+    public const string TaskAnswerDelay = "TaskAnswerDelay";
+    public const string TaskJoinOthers = "TaskJoinOthers";
+    public const string TaskStopWhenContributionFull = "TaskStopWhenContributionFull";
+    public const string TaskForbiddenForestTimes = "TaskForbiddenForestTimes";
+    public const string TaskSelectedTeamPosition = "TaskSelectedTeamPosition";
+    public const string TaskCookingTimes = "TaskCookingTimes";
+    public const string TaskCookingSelectedDish = "TaskCookingSelectedDish";
 }

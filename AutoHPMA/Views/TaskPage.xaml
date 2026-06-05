@@ -4,8 +4,376 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Loaded="OnLoaded">
 
-    <Grid />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+        <StackPanel Margin="40,30,40,30">
+            <TextBlock
+                Margin="0,0,0,8"
+                FontWeight="Bold"
+                Text="常驻功能" />
+
+            <!-- 自动社团答题 -->
+            <Expander Margin="0,0,0,12" Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xE8D4;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="自动社团答题" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="点击展开相关配置"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="2"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.AutoClubQuizToggleCommand}"
+                            IsEnabled="{x:Bind ViewModel.TaskCommandsEnabled, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Spacing="0">
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="答题延迟（ms）" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="匹配到正确答案后执行点击操作的等待时间"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <NumberBox
+                            Grid.Column="1"
+                            MinWidth="120"
+                            LargeChange="100"
+                            Minimum="0"
+                            SmallChange="50"
+                            SpinButtonPlacementMode="Inline"
+                            Value="{x:Bind ViewModel.AnswerDelay, Mode=TwoWay}" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="学院互助答题" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="当所在社团答题未开启时，尝试加入学院互助频道的答题活动"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="1"
+                            MinWidth="0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.JoinOthers, Mode=TwoWay}"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="满贡终止答题" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="检测到本周社团贡献已达上限时，自动终止答题任务"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="1"
+                            MinWidth="0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.StopWhenContributionFull, Mode=TwoWay}"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="打开题库目录" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="打开题库文件的存储目录"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.OpenQuestionBankCommand}"
+                            Content="打开" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+            <!-- 自动禁林 -->
+            <Expander Margin="0,0,0,12" Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xE7C1;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="自动禁林探索" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="点击展开相关配置"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="2"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.AutoForbiddenForestToggleCommand}"
+                            IsEnabled="{x:Bind ViewModel.TaskCommandsEnabled, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Spacing="0">
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="执行次数" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="完成指定次数后自动停止任务"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <NumberBox
+                            Grid.Column="1"
+                            MinWidth="120"
+                            LargeChange="5"
+                            Minimum="1"
+                            SmallChange="1"
+                            SpinButtonPlacementMode="Inline"
+                            Value="{x:Bind ViewModel.AutoForbiddenForestTimes, Mode=TwoWay}" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="组队身份" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="选择当前角色在队伍中的身份"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ComboBox
+                            Grid.Column="1"
+                            MinWidth="100"
+                            ItemsSource="{x:Bind ViewModel.TeamPositions}"
+                            SelectedItem="{x:Bind ViewModel.SelectedTeamPosition, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+            <!-- 自动烹饪 -->
+            <Expander Margin="0,0,0,12" Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xE8D6;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="自动巫师烹饪" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="点击展开相关配置"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="2"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.AutoCookingToggleCommand}"
+                            IsEnabled="{x:Bind ViewModel.TaskCommandsEnabled, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Spacing="0">
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="执行次数" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="完成指定次数后自动停止任务"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <NumberBox
+                            Grid.Column="1"
+                            MinWidth="120"
+                            LargeChange="5"
+                            Minimum="1"
+                            SmallChange="1"
+                            SpinButtonPlacementMode="Inline"
+                            Value="{x:Bind ViewModel.AutoCookingTimes, Mode=TwoWay}" />
+                    </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid ColumnSpacing="12" Style="{StaticResource CardRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="目标菜品" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="选择烹饪菜品"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ComboBox
+                            Grid.Column="1"
+                            MinWidth="160"
+                            ItemsSource="{x:Bind ViewModel.Dishes}"
+                            SelectedItem="{x:Bind ViewModel.AutoCookingSelectedDish, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
+            <TextBlock
+                Margin="0,0,0,8"
+                FontWeight="Bold"
+                Text="限时活动" />
+
+            <!-- 甜蜜冒险 -->
+            <Expander Margin="0,0,0,12" Style="{StaticResource CardExpanderStyle}">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                            Glyph="&#xEC6C;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="自动甜蜜冒险" TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="点击展开相关配置"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="2"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{x:Bind ViewModel.AutoSweetAdventureToggleCommand}"
+                            IsEnabled="{x:Bind ViewModel.TaskCommandsEnabled, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="{x:Bind ViewModel.StartButtonGlyph, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind ViewModel.StartButtonText, Mode=OneWay}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel />
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
 </Page>
-
