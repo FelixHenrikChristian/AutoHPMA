@@ -1,5 +1,5 @@
+using AutoHPMA.Core.Models;
 using AutoHPMA.Models;
-using OpenCvSharp;
 
 namespace AutoHPMA.Contracts.Services;
 
@@ -13,17 +13,17 @@ public interface IOverlayWindowService : IDisposable
 
     void SetGameState(string state);
 
-    void AddTemporaryRect(Rect rect, string? text = null, int durationMs = 500);
+    void AddTemporaryRegion(OverlayRegion region, int durationMs = 500);
 
-    void AddTemporaryRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null, int durationMs = 500);
+    void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500);
 
-    void SetStateIndicatorRects(IReadOnlyList<Rect> rects);
+    void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions);
 
-    void ClearStateIndicatorRects();
+    void ClearStateIndicatorRegions();
 
-    void SetTaskStateRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null);
+    void SetTaskStateRegions(IReadOnlyList<OverlayRegion> regions);
 
-    void ClearTaskStateRects();
+    void ClearTaskStateRegions();
 
     void ClearMask();
 }

@@ -1,12 +1,11 @@
 using AutoHPMA.Capture.Native;
 using AutoHPMA.Contracts.Services;
+using AutoHPMA.Core.Models;
 using AutoHPMA.Helpers;
 using AutoHPMA.Models;
 using AutoHPMA.Views.Windows;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
-using OpenCvSharp;
-using Rect = OpenCvSharp.Rect;
 
 namespace AutoHPMA.Services;
 
@@ -75,23 +74,23 @@ public sealed class OverlayWindowService : IOverlayWindowService
     public void SetGameState(string state) =>
         RunOnUiThread(() => _logWindow?.SetGameState(state));
 
-    public void AddTemporaryRect(Rect rect, string? text = null, int durationMs = 500) =>
-        RunOnUiThread(() => _maskWindow?.AddTemporaryRect(rect, text, durationMs));
+    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 500) =>
+        RunOnUiThread(() => _maskWindow?.AddTemporaryRegion(region, durationMs));
 
-    public void AddTemporaryRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null, int durationMs = 500) =>
-        RunOnUiThread(() => _maskWindow?.AddTemporaryRects(rects, textContents, durationMs));
+    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500) =>
+        RunOnUiThread(() => _maskWindow?.AddTemporaryRegions(regions, durationMs));
 
-    public void SetStateIndicatorRects(IReadOnlyList<Rect> rects) =>
-        RunOnUiThread(() => _maskWindow?.SetStateIndicatorRects(rects));
+    public void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions) =>
+        RunOnUiThread(() => _maskWindow?.SetStateIndicatorRegions(regions));
 
-    public void ClearStateIndicatorRects() =>
-        RunOnUiThread(() => _maskWindow?.ClearStateIndicatorRects());
+    public void ClearStateIndicatorRegions() =>
+        RunOnUiThread(() => _maskWindow?.ClearStateIndicatorRegions());
 
-    public void SetTaskStateRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null) =>
-        RunOnUiThread(() => _maskWindow?.SetTaskStateRects(rects, textContents));
+    public void SetTaskStateRegions(IReadOnlyList<OverlayRegion> regions) =>
+        RunOnUiThread(() => _maskWindow?.SetTaskStateRegions(regions));
 
-    public void ClearTaskStateRects() =>
-        RunOnUiThread(() => _maskWindow?.ClearTaskStateRects());
+    public void ClearTaskStateRegions() =>
+        RunOnUiThread(() => _maskWindow?.ClearTaskStateRegions());
 
     public void ClearMask() =>
         RunOnUiThread(() => _maskWindow?.ClearAll());

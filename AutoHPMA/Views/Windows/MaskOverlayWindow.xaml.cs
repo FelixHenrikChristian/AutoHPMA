@@ -1,3 +1,4 @@
+using AutoHPMA.Core.Models;
 using AutoHPMA.Helpers;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
@@ -6,28 +7,25 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.UI;
-using Rect = OpenCvSharp.Rect;
 
 namespace AutoHPMA.Views.Windows;
 
 public sealed partial class MaskOverlayWindow : WindowEx
 {
-    private class RectData
+    private class RegionData
     {
-        public Rect Rect { get; init; }
-
-        public string? Text { get; init; }
+        public required OverlayRegion Region { get; init; }
     }
 
-    private sealed class TemporaryRect : RectData
+    private sealed class TemporaryRegion : RegionData
     {
         public DateTime ExpireTime { get; init; }
     }
 
     private readonly object _gate = new();
-    private readonly List<TemporaryRect> _temporaryRects = [];
-    private readonly List<RectData> _stateIndicatorRects = [];
-    private readonly List<RectData> _taskStateRects = [];
+    private readonly List<TemporaryRegion> _temporaryRegions = [];
+    private readonly List<RegionData> _stateIndicatorRegions = [];
+    private readonly List<RegionData> _taskStateRegions = [];
     private readonly DispatcherQueue _dispatcher;
     private readonly DispatcherQueueTimer _cleanupTimer;
     private readonly IDisposable _messageHook;
@@ -53,14 +51,13 @@ public sealed partial class MaskOverlayWindow : WindowEx
 
     public bool ShowTextLabels { get; set; } = true;
 
-    public void AddTemporaryRect(Rect rect, string? text = null, int durationMs = 500)
+    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 500)
     {
         lock (_gate)
         {
-            _temporaryRects.Add(new TemporaryRect
+            _temporaryRegions.Add(new TemporaryRegion
             {
-                Rect = rect,
-                Text = text,
+                Region = region,
                 ExpireTime = DateTime.Now.AddMilliseconds(durationMs),
             });
         }
@@ -68,19 +65,16 @@ public sealed partial class MaskOverlayWindow : WindowEx
         Redraw();
     }
 
-    public void AddTemporaryRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null, int durationMs = 500)
+    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500)
     {
         var expireTime = DateTime.Now.AddMilliseconds(durationMs);
         lock (_gate)
         {
-            foreach (var rect in rects)
+            foreach (var region in regions)
             {
-                string? text = null;
-                textContents?.TryGetValue(rect, out text);
-                _temporaryRects.Add(new TemporaryRect
+                _temporaryRegions.Add(new TemporaryRegion
                 {
-                    Rect = rect,
-                    Text = text,
+                    Region = region,
                     ExpireTime = expireTime,
                 });
             }
@@ -89,52 +83,43 @@ public sealed partial class MaskOverlayWindow : WindowEx
         Redraw();
     }
 
-    public void SetStateIndicatorRects(IReadOnlyList<Rect> rects)
+    public void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions)
     {
         lock (_gate)
         {
-            _stateIndicatorRects.Clear();
-            _stateIndicatorRects.AddRange(rects.Select(rect => new RectData { Rect = rect }));
+            _stateIndicatorRegions.Clear();
+            _stateIndicatorRegions.AddRange(regions.Select(region => new RegionData { Region = region }));
         }
 
         Redraw();
     }
 
-    public void ClearStateIndicatorRects()
+    public void ClearStateIndicatorRegions()
     {
         lock (_gate)
         {
-            _stateIndicatorRects.Clear();
+            _stateIndicatorRegions.Clear();
         }
 
         Redraw();
     }
 
-    public void SetTaskStateRects(IReadOnlyList<Rect> rects, IReadOnlyDictionary<Rect, string>? textContents = null)
+    public void SetTaskStateRegions(IReadOnlyList<OverlayRegion> regions)
     {
         lock (_gate)
         {
-            _taskStateRects.Clear();
-            foreach (var rect in rects)
-            {
-                string? text = null;
-                textContents?.TryGetValue(rect, out text);
-                _taskStateRects.Add(new RectData
-                {
-                    Rect = rect,
-                    Text = text,
-                });
-            }
+            _taskStateRegions.Clear();
+            _taskStateRegions.AddRange(regions.Select(region => new RegionData { Region = region }));
         }
 
         Redraw();
     }
 
-    public void ClearTaskStateRects()
+    public void ClearTaskStateRegions()
     {
         lock (_gate)
         {
-            _taskStateRects.Clear();
+            _taskStateRegions.Clear();
         }
 
         Redraw();
@@ -144,9 +129,9 @@ public sealed partial class MaskOverlayWindow : WindowEx
     {
         lock (_gate)
         {
-            _temporaryRects.Clear();
-            _stateIndicatorRects.Clear();
-            _taskStateRects.Clear();
+            _temporaryRegions.Clear();
+            _stateIndicatorRegions.Clear();
+            _taskStateRegions.Clear();
         }
 
         Redraw();
@@ -175,57 +160,146 @@ public sealed partial class MaskOverlayWindow : WindowEx
             return;
         }
 
+        var scale = GetRasterizationScale();
+        var windowSize = AppWindow.Size;
+        var canvasWidth = Math.Max(1, windowSize.Width / scale);
+        var canvasHeight = Math.Max(1, windowSize.Height / scale);
+
+        OverlayCanvas.Width = canvasWidth;
+        OverlayCanvas.Height = canvasHeight;
         OverlayCanvas.Children.Clear();
 
         lock (_gate)
         {
-            foreach (var stateRect in _stateIndicatorRects)
+            foreach (var stateRegion in _stateIndicatorRegions)
             {
-                DrawRect(stateRect.Rect, stateRect.Text, Colors.LimeGreen);
+                DrawRegion(stateRegion.Region, Colors.LimeGreen, scale, canvasWidth, canvasHeight);
             }
 
-            foreach (var taskRect in _taskStateRects)
+            foreach (var taskRegion in _taskStateRegions)
             {
-                DrawRect(taskRect.Rect, taskRect.Text, Colors.DeepSkyBlue);
+                DrawRegion(taskRegion.Region, Colors.DeepSkyBlue, scale, canvasWidth, canvasHeight);
             }
 
-            foreach (var tempRect in _temporaryRects)
+            foreach (var tempRegion in _temporaryRegions)
             {
-                DrawRect(tempRect.Rect, tempRect.Text, Colors.Red);
+                DrawRegion(tempRegion.Region, Colors.MediumPurple, scale, canvasWidth, canvasHeight);
             }
         }
     }
 
-    private void DrawRect(Rect rect, string? text, Color color)
+    private void DrawRegion(OverlayRegion region, Color color, double scale, double canvasWidth, double canvasHeight)
     {
+        if (region.Width <= 0 || region.Height <= 0)
+        {
+            return;
+        }
+
+        var x = region.X / scale;
+        var y = region.Y / scale;
+        var width = region.Width / scale;
+        var height = region.Height / scale;
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
         var stroke = new SolidColorBrush(color);
         var shape = new Rectangle
         {
             Stroke = stroke,
             StrokeThickness = 2,
-            Width = rect.Width,
-            Height = rect.Height,
+            Fill = new SolidColorBrush(Color.FromArgb(0x18, color.R, color.G, color.B)),
+            Width = width,
+            Height = height,
         };
 
-        Canvas.SetLeft(shape, rect.X);
-        Canvas.SetTop(shape, rect.Y);
+        Canvas.SetLeft(shape, x);
+        Canvas.SetTop(shape, y);
         OverlayCanvas.Children.Add(shape);
 
-        if (!ShowTextLabels || string.IsNullOrWhiteSpace(text))
+        if (!ShowTextLabels)
         {
             return;
         }
 
-        var textBlock = new TextBlock
+        if (!string.IsNullOrWhiteSpace(region.Name))
         {
-            Text = text,
-            Foreground = new SolidColorBrush(Colors.White),
-            FontSize = 14,
-            FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            AddNameLabel(region.Name, stroke, x, y, width, canvasWidth, canvasHeight);
+        }
+
+        if (!string.IsNullOrWhiteSpace(region.StatusText))
+        {
+            AddStatusText(region.StatusText, x, y, width, height);
+        }
+    }
+
+    private void AddNameLabel(
+        string name,
+        Brush borderBrush,
+        double x,
+        double y,
+        double width,
+        double canvasWidth,
+        double canvasHeight)
+    {
+        var labelMaxWidth = Math.Max(80, Math.Min(Math.Max(width, 120), canvasWidth - x - 8));
+        var labelTop = y >= 24 ? y - 24 : Math.Min(y + 4, Math.Max(0, canvasHeight - 24));
+        var labelElement = new Border
+        {
+            MaxWidth = labelMaxWidth,
+            Padding = new Thickness(6, 2, 6, 2),
+            Background = new SolidColorBrush(Color.FromArgb(0xCC, 0, 0, 0)),
+            BorderBrush = borderBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Child = new TextBlock
+            {
+                Text = name,
+                FontSize = 11,
+                Foreground = new SolidColorBrush(Colors.White),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            },
         };
-        Canvas.SetLeft(textBlock, rect.X + 5);
-        Canvas.SetTop(textBlock, rect.Y + 5);
-        OverlayCanvas.Children.Add(textBlock);
+
+        Canvas.SetLeft(labelElement, Math.Max(0, Math.Min(x, Math.Max(0, canvasWidth - 8))));
+        Canvas.SetTop(labelElement, labelTop);
+        OverlayCanvas.Children.Add(labelElement);
+    }
+
+    private void AddStatusText(string statusText, double x, double y, double width, double height)
+    {
+        var maxWidth = Math.Max(24, width - 8);
+        var statusElement = new Border
+        {
+            MaxWidth = maxWidth,
+            Padding = new Thickness(5, 1, 5, 1),
+            Background = new SolidColorBrush(Color.FromArgb(0xB8, 0, 0, 0)),
+            CornerRadius = new CornerRadius(4),
+            Child = new TextBlock
+            {
+                Text = statusText,
+                FontSize = 11,
+                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                Foreground = new SolidColorBrush(Colors.White),
+                TextAlignment = TextAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            },
+        };
+
+        statusElement.Measure(new global::Windows.Foundation.Size(maxWidth, double.PositiveInfinity));
+        var desiredWidth = Math.Min(statusElement.DesiredSize.Width, maxWidth);
+        var desiredHeight = statusElement.DesiredSize.Height;
+
+        Canvas.SetLeft(statusElement, x + Math.Max(4, (width - desiredWidth) / 2));
+        Canvas.SetTop(statusElement, y + Math.Max(4, height - desiredHeight - 6));
+        OverlayCanvas.Children.Add(statusElement);
+    }
+
+    private double GetRasterizationScale()
+    {
+        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1d;
+        return scale > 0 ? scale : 1d;
     }
 
     private void OnCleanupTimerTick(DispatcherQueueTimer sender, object args)
@@ -234,7 +308,7 @@ public sealed partial class MaskOverlayWindow : WindowEx
         lock (_gate)
         {
             var now = DateTime.Now;
-            var removed = _temporaryRects.RemoveAll(rect => rect.ExpireTime <= now);
+            var removed = _temporaryRegions.RemoveAll(region => region.ExpireTime <= now);
             needsRedraw = removed > 0;
         }
 
