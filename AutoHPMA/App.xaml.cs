@@ -77,6 +77,7 @@ public partial class App : Application
             services.AddSingleton<IInfoBarNotificationService, InfoBarNotificationService>();
             services.AddSingleton<IHotkeyService, HotkeyService>();
             services.AddSingleton<IOcrService, OcrService>();
+            services.AddSingleton<IOverlayWindowService, OverlayWindowService>();
             services.AddSingleton<IGameWindowProvider, MumuGameWindowProvider>();
             services.AddSingleton<IGameWindowProvider, OfficialLauncherGameWindowProvider>();
             services.AddSingleton<IAutomationRuntimeService, AutomationRuntimeService>();

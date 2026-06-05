@@ -21,6 +21,7 @@ public partial class HomeViewModel : ObservableRecipient, IDisposable
 
     private bool _logWindowEnabled = true;
     private bool _logWindowMarqueeEnabled = true;
+    private bool _hideDebugLog = true;
     private bool _maskWindowEnabled = true;
     private bool _maskWindowShowTextLabels = true;
     private double _stateMonitorInterval = DefaultStateMonitorInterval;
@@ -64,6 +65,18 @@ public partial class HomeViewModel : ObservableRecipient, IDisposable
             if (SetProperty(ref _logWindowMarqueeEnabled, value))
             {
                 PersistSetting(SettingsKeys.HomeLogWindowMarqueeEnabled, value);
+            }
+        }
+    }
+
+    public bool HideDebugLog
+    {
+        get => _hideDebugLog;
+        set
+        {
+            if (SetProperty(ref _hideDebugLog, value))
+            {
+                PersistSetting(SettingsKeys.HomeHideDebugLog, value);
             }
         }
     }
@@ -187,6 +200,7 @@ public partial class HomeViewModel : ObservableRecipient, IDisposable
         {
             LogWindowEnabled = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HomeLogWindowEnabled) ?? true;
             LogWindowMarqueeEnabled = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HomeLogWindowMarqueeEnabled) ?? true;
+            HideDebugLog = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HomeHideDebugLog) ?? true;
             MaskWindowEnabled = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HomeMaskWindowEnabled) ?? true;
             MaskWindowShowTextLabels = await _localSettingsService.ReadSettingAsync<bool?>(SettingsKeys.HomeMaskWindowShowTextLabels) ?? true;
             StateMonitorInterval = await _localSettingsService.ReadSettingAsync<int?>(SettingsKeys.HomeStateMonitorInterval) ?? DefaultStateMonitorInterval;
@@ -209,7 +223,7 @@ public partial class HomeViewModel : ObservableRecipient, IDisposable
     {
         LogWindowEnabled = LogWindowEnabled,
         LogWindowMarqueeEnabled = LogWindowMarqueeEnabled,
-        ShowDebugLogs = false,
+        ShowDebugLogs = !HideDebugLog,
         MaskWindowEnabled = MaskWindowEnabled,
         MaskWindowShowTextLabels = MaskWindowShowTextLabels,
         StateMonitorInterval = (int)StateMonitorInterval,

@@ -9,14 +9,17 @@ namespace AutoHPMA.Models;
 /// </summary>
 public sealed class LogEntry
 {
-    public DateTimeOffset Timestamp { get; init; }
-    public LogEventLevel Level { get; init; }
-    public string SourceContext { get; init; } = string.Empty;
-    public string Message { get; init; } = string.Empty;
-    public string? Exception { get; init; }
+    public DateTimeOffset Timestamp { get; set; }
+    public LogEventLevel Level { get; set; }
+    public string SourceContext { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string? Exception { get; set; }
 
     /// <summary>时:分:秒.毫秒。</summary>
     public string TimeText => Timestamp.LocalDateTime.ToString("HH:mm:ss.fff");
+
+    /// <summary>时:分:秒，用于悬浮日志窗口。</summary>
+    public string ShortTimeText => Timestamp.LocalDateTime.ToString("HH:mm:ss");
 
     /// <summary>三字母缩写：INF / DBG / WRN / ERR / FTL / VRB。</summary>
     public string LevelText => Level switch

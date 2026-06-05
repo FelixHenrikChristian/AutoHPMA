@@ -11,10 +11,12 @@ namespace AutoHPMA.Services;
 
 public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDisposable
 {
-    private static readonly TimeSpan MonitorInterval = TimeSpan.FromSeconds(1);
+    private const int MinimumMonitorIntervalMs = 50;
+    private static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromSeconds(1);
 
     private readonly IReadOnlyList<IGameWindowProvider> _windowProviders;
     private readonly IHotkeyService _hotkeyService;
+    private readonly IOverlayWindowService _overlayWindowService;
     private readonly IInfoBarNotificationService _infoBar;
     private readonly ILogger<AutomationRuntimeService> _logger;
     private readonly object _gate = new();
@@ -25,11 +27,13 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
     public AutomationRuntimeService(
         IEnumerable<IGameWindowProvider> windowProviders,
         IHotkeyService hotkeyService,
+        IOverlayWindowService overlayWindowService,
         IInfoBarNotificationService infoBar,
         ILogger<AutomationRuntimeService> logger)
     {
         _windowProviders = windowProviders.ToArray();
         _hotkeyService = hotkeyService;
+        _overlayWindowService = overlayWindowService;
         _infoBar = infoBar;
         _logger = logger;
     }
@@ -83,7 +87,8 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
 
                 _hotkeyService.GameWindowPredicate = IsGameWindow;
                 TryBringTargetToForeground(target);
-                StartMonitorTimer();
+                _overlayWindowService.Start(target, options);
+                StartMonitorTimer(options.StateMonitorInterval);
 
                 _logger.LogInformation(
                     "Automation runtime started. Provider={Provider}, Client={Client}, DisplayHwnd=0x{DisplayHwnd:X}, GameHwnd=0x{GameHwnd:X}",
@@ -129,6 +134,7 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
     public void Dispose()
     {
         Stop();
+        _overlayWindowService.Dispose();
         _monitorTimer = null;
     }
 
@@ -153,11 +159,13 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
         return null;
     }
 
-    private void StartMonitorTimer()
+    private void StartMonitorTimer(int intervalMs)
     {
         var dispatcherQueue = App.MainWindow.DispatcherQueue;
         _monitorTimer ??= dispatcherQueue.CreateTimer();
-        _monitorTimer.Interval = MonitorInterval;
+        _monitorTimer.Interval = intervalMs > 0
+            ? TimeSpan.FromMilliseconds(Math.Max(MinimumMonitorIntervalMs, intervalMs))
+            : DefaultMonitorInterval;
         _monitorTimer.IsRepeating = true;
         _monitorTimer.Tick -= OnMonitorTimerTick;
         _monitorTimer.Tick += OnMonitorTimerTick;
@@ -175,6 +183,7 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
 
             if (IsTargetAlive(CurrentTarget) && (_capture?.IsCapturing ?? false))
             {
+                _overlayWindowService.Refresh(CurrentTarget);
                 return;
             }
 
@@ -200,6 +209,8 @@ public sealed class AutomationRuntimeService : IAutomationRuntimeService, IDispo
 
         _capture?.Dispose();
         _capture = null;
+
+        _overlayWindowService.Stop();
 
         CurrentTarget = null;
         CurrentOptions = null;

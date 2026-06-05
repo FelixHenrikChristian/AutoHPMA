@@ -214,6 +214,28 @@
                             OffContent="Off"
                             OnContent="On" />
                     </Grid>
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
+                    <Grid Margin="16" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="隐藏调试日志" TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="启用后将隐藏详细的调试信息，关闭后可输出调试信息以便排查问题"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch
+                            Grid.Column="1"
+                            MinWidth="0"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            IsOn="{x:Bind ViewModel.HideDebugLog, Mode=TwoWay}"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
                 </StackPanel>
             </Expander>
 
