@@ -18,6 +18,20 @@ internal enum ForbiddenForestState
 public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForestTaskOptions>
 {
     private const string ImageDirectory = "Assets/Tasks/ForbiddenForest/Image";
+    private static readonly double[] StateIconScaleFactors = [1d, 0.98d, 1.02d, 0.95d, 1.05d];
+    private static readonly double[] LargeStateScaleFactors = [1d, 0.98d, 1.02d];
+    private static readonly TemplateSearchOptions StateIconSearchOptions = new()
+    {
+        UseAlphaMask = true,
+        Threshold = 0.88,
+        ScaleFactors = StateIconScaleFactors,
+    };
+    private static readonly TemplateSearchOptions LargeStateSearchOptions = new()
+    {
+        UseAlphaMask = true,
+        Threshold = 0.88,
+        ScaleFactors = LargeStateScaleFactors,
+    };
 
     private readonly Dictionary<string, Mat> _images;
     private readonly IReadOnlyList<AutomationTaskStateRule<ForbiddenForestState>> _stateRules;
@@ -29,14 +43,13 @@ public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForest
         ILogger<AutoForbiddenForestTask> logger)
         : base(options, logger)
     {
-        _images = LoadImagesFromDirectory(ImageDirectory);
-        _images["fight_auto"] = LoadImage(Path.Combine(ImageDirectory, "fight_auto.png"), ImreadModes.Unchanged);
+        _images = LoadImagesFromDirectory(ImageDirectory, ImreadModes.Unchanged);
         _stateRules =
         [
-            new([GetImage("ui_explore")], ForbiddenForestState.Teaming, "禁林-组队中"),
-            new([GetImage("ui_loading")], ForbiddenForestState.Loading, "禁林-加载中"),
-            new([GetImage("ui_clock")], ForbiddenForestState.Fighting, "禁林-战斗中"),
-            new([GetImage("ui_statistics")], ForbiddenForestState.Summary, "禁林-结算中"),
+            new([GetImage("ui_explore")], ForbiddenForestState.Teaming, "禁林-组队中", SearchOptions: StateIconSearchOptions),
+            new([GetImage("ui_loading")], ForbiddenForestState.Loading, "禁林-加载中", SearchOptions: LargeStateSearchOptions),
+            new([GetImage("ui_clock")], ForbiddenForestState.Fighting, "禁林-战斗中", SearchOptions: StateIconSearchOptions),
+            new([GetImage("ui_statistics")], ForbiddenForestState.Summary, "禁林-结算中", SearchOptions: StateIconSearchOptions),
         ];
 
         UnknownBufferMilliseconds = 5000;

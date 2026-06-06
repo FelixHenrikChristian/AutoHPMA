@@ -49,29 +49,60 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         ValidateSearchInput(sourceMat, templateMat, options);
 
         using var templateBgr = ConvertTemplateToBgr(templateMat);
-        ValidateTemplateSize(sourceMat, templateBgr);
-        using var generatedMask = options.Mask is null && options.UseAlphaMask
+        using var generatedMask = options.Mask is null && options.UseAlphaMask && templateMat.Channels() == 4
             ? GenerateAlphaMask(templateMat)
             : null;
-        using var resultRoiMask = CreateResultRoiMask(
-            options.SourceMask,
-            sourceMat.Width,
-            sourceMat.Height,
-            templateBgr.Width,
-            templateBgr.Height);
+        var baseMask = options.Mask ?? generatedMask;
 
         var maxCount = options.FindMultiple
             ? options.MaxCount ?? CalculateDefaultMaxCount(sourceMat, templateBgr)
             : 1;
 
-        var regions = MatchRegions(
-            sourceMat,
-            templateBgr,
-            options.MatchMode,
-            options.Threshold,
-            maxCount,
-            options.Mask ?? generatedMask,
-            resultRoiMask);
+        var regions = new List<TemplateMatchRegion>();
+        foreach (var scale in CreateScaleCandidates(options))
+        {
+            using var scaledTemplate = ResizeMat(
+                templateBgr,
+                scale.ScaleX,
+                scale.ScaleY,
+                GetResizeInterpolation(scale.ScaleX, scale.ScaleY));
+            if (scaledTemplate.Width > sourceMat.Width || scaledTemplate.Height > sourceMat.Height)
+            {
+                continue;
+            }
+
+            using var scaledMask = ResizeMask(baseMask, scaledTemplate.Width, scaledTemplate.Height);
+            using var resultRoiMask = CreateResultRoiMask(
+                options.SourceMask,
+                sourceMat.Width,
+                sourceMat.Height,
+                scaledTemplate.Width,
+                scaledTemplate.Height);
+
+            var scaleRegions = MatchRegions(
+                sourceMat,
+                scaledTemplate,
+                options.MatchMode,
+                options.Threshold,
+                Math.Max(maxCount - regions.Count, 1),
+                scaledMask,
+                resultRoiMask);
+            if (scaleRegions.Count == 0)
+            {
+                continue;
+            }
+
+            if (!options.FindMultiple)
+            {
+                return new TemplateSearchResult(scaleRegions);
+            }
+
+            AddNonOverlappingRegions(regions, scaleRegions, maxCount);
+            if (regions.Count >= maxCount)
+            {
+                break;
+            }
+        }
 
         return regions.Count == 0
             ? TemplateSearchResult.Failed
@@ -161,6 +192,18 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         if (options.MaxCount <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options.MaxCount), "Max count must be greater than zero.");
+        }
+
+        ValidateScale(options.TemplateScaleX, nameof(options.TemplateScaleX));
+        ValidateScale(options.TemplateScaleY, nameof(options.TemplateScaleY));
+        if (options.ScaleFactors is null)
+        {
+            return;
+        }
+
+        foreach (var scale in options.ScaleFactors)
+        {
+            ValidateScale(scale, nameof(options.ScaleFactors));
         }
     }
 
@@ -254,6 +297,108 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         var sourceArea = Math.Max(sourceMat.Width * sourceMat.Height, 1);
         var templateArea = Math.Max(templateMat.Width * templateMat.Height, 1);
         return Math.Max(sourceArea / templateArea, 1);
+    }
+
+    private static void ValidateScale(double scale, string paramName)
+    {
+        if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
+        {
+            throw new ArgumentOutOfRangeException(paramName, "Template scale must be greater than zero.");
+        }
+    }
+
+    private static IReadOnlyList<(double ScaleX, double ScaleY)> CreateScaleCandidates(TemplateSearchOptions options)
+    {
+        if (options.ScaleFactors is null || options.ScaleFactors.Count == 0)
+        {
+            return [(options.TemplateScaleX, options.TemplateScaleY)];
+        }
+
+        var candidates = new List<(double ScaleX, double ScaleY)>(options.ScaleFactors.Count);
+        foreach (var scale in options.ScaleFactors)
+        {
+            var candidate = (
+                Math.Round(options.TemplateScaleX * scale, 4),
+                Math.Round(options.TemplateScaleY * scale, 4));
+            if (!candidates.Contains(candidate))
+            {
+                candidates.Add(candidate);
+            }
+        }
+
+        return candidates;
+    }
+
+    private static Mat ResizeMat(Mat mat, double scaleX, double scaleY, InterpolationFlags interpolation)
+    {
+        var width = Math.Max(1, (int)Math.Round(mat.Width * scaleX));
+        var height = Math.Max(1, (int)Math.Round(mat.Height * scaleY));
+        if (width == mat.Width && height == mat.Height)
+        {
+            return mat.Clone();
+        }
+
+        var resized = new Mat();
+        Cv2.Resize(mat, resized, new Size(width, height), 0, 0, interpolation);
+        return resized;
+    }
+
+    private static Mat? ResizeMask(Mat? mask, int templateWidth, int templateHeight)
+    {
+        if (mask is null || mask.Empty())
+        {
+            return null;
+        }
+
+        if (mask.Width == templateWidth && mask.Height == templateHeight)
+        {
+            return mask.Clone();
+        }
+
+        var resized = new Mat();
+        Cv2.Resize(mask, resized, new Size(templateWidth, templateHeight), 0, 0, InterpolationFlags.Nearest);
+        return resized;
+    }
+
+    private static InterpolationFlags GetResizeInterpolation(double scaleX, double scaleY) =>
+        scaleX < 1d || scaleY < 1d
+            ? InterpolationFlags.Area
+            : InterpolationFlags.Linear;
+
+    private static void AddNonOverlappingRegions(
+        List<TemplateMatchRegion> regions,
+        IReadOnlyList<TemplateMatchRegion> candidates,
+        int maxCount)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (regions.Any(region => CalculateOverlapRatio(region, candidate) > 0.5d))
+            {
+                continue;
+            }
+
+            regions.Add(candidate);
+            if (regions.Count >= maxCount)
+            {
+                return;
+            }
+        }
+    }
+
+    private static double CalculateOverlapRatio(TemplateMatchRegion left, TemplateMatchRegion right)
+    {
+        var x1 = Math.Max(left.X, right.X);
+        var y1 = Math.Max(left.Y, right.Y);
+        var x2 = Math.Min(left.X + left.Width, right.X + right.Width);
+        var y2 = Math.Min(left.Y + left.Height, right.Y + right.Height);
+        var intersection = Math.Max(0, x2 - x1) * Math.Max(0, y2 - y1);
+        if (intersection == 0)
+        {
+            return 0;
+        }
+
+        var smallerArea = Math.Max(1, Math.Min(left.Width * left.Height, right.Width * right.Height));
+        return intersection / (double)smallerArea;
     }
 
     private static IReadOnlyList<TemplateMatchRegion> MatchRegions(

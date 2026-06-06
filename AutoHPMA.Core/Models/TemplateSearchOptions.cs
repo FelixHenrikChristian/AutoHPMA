@@ -17,4 +17,10 @@ public sealed class TemplateSearchOptions
     public TemplateMatchModes MatchMode { get; init; } = TemplateMatchModes.CCoeffNormed;
 
     public int? MaxCount { get; init; }
+
+    public double TemplateScaleX { get; init; } = 1d;
+
+    public double TemplateScaleY { get; init; } = 1d;
+
+    public IReadOnlyList<double>? ScaleFactors { get; init; }
 }

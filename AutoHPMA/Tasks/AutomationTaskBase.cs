@@ -231,7 +231,7 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
             {
                 var result = Find(
                     template,
-                    new TemplateSearchOptions { Threshold = rule.Threshold },
+                    CreateRuleSearchOptions(rule),
                     cancellationToken);
                 if (!result.Success)
                 {
@@ -247,6 +247,31 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
         Context.Overlay.ClearStateIndicatorRegions();
         Context.Overlay.SetGameState(defaultDisplayName);
         return defaultState;
+    }
+
+    private static TemplateSearchOptions CreateRuleSearchOptions<TState>(
+        AutomationTaskStateRule<TState> rule)
+        where TState : struct
+    {
+        if (rule.SearchOptions is null)
+        {
+            return new TemplateSearchOptions { Threshold = rule.Threshold };
+        }
+
+        var options = rule.SearchOptions;
+        return new TemplateSearchOptions
+        {
+            Mask = options.Mask,
+            UseAlphaMask = options.UseAlphaMask,
+            SourceMask = options.SourceMask,
+            FindMultiple = options.FindMultiple,
+            Threshold = options.Threshold,
+            MatchMode = options.MatchMode,
+            MaxCount = options.MaxCount,
+            TemplateScaleX = options.TemplateScaleX,
+            TemplateScaleY = options.TemplateScaleY,
+            ScaleFactors = options.ScaleFactors,
+        };
     }
 
     private async Task StopStateMonitorAsync()
