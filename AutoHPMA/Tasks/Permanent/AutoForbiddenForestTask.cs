@@ -22,13 +22,11 @@ public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForest
     private static readonly double[] LargeStateScaleFactors = [1d, 0.98d, 1.02d];
     private static readonly TemplateSearchOptions StateIconSearchOptions = new()
     {
-        UseAlphaMask = true,
         Threshold = 0.88,
         ScaleFactors = StateIconScaleFactors,
     };
     private static readonly TemplateSearchOptions LargeStateSearchOptions = new()
     {
-        UseAlphaMask = true,
         Threshold = 0.88,
         ScaleFactors = LargeStateScaleFactors,
     };

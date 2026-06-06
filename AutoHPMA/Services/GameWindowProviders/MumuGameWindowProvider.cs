@@ -16,26 +16,32 @@ public sealed class MumuGameWindowProvider : IGameWindowProvider
 
     public GameWindowTarget? TryLocate()
     {
-        var displayWindow = WindowEnumerator
+        var candidates = WindowEnumerator
             .EnumerateVisibleWindows()
-            .FirstOrDefault(IsMumuDisplayWindow);
+            .Where(IsMumuDisplayWindow)
+            .Select(window => new
+            {
+                DisplayWindow = window,
+                GameWindow = WindowEnumerator
+                    .EnumerateChildWindows(window)
+                    .FirstOrDefault(IsMumuGameChildWindow),
+            })
+            .ToArray();
 
-        if (displayWindow is null)
+        var target = candidates.FirstOrDefault(candidate => candidate.GameWindow is not null)
+            ?? candidates.FirstOrDefault();
+
+        if (target is null)
         {
             return null;
         }
-
-        var gameWindow = WindowEnumerator
-            .EnumerateChildWindows(displayWindow)
-            .FirstOrDefault(IsMumuGameChildWindow)
-            ?? displayWindow;
 
         return new GameWindowTarget
         {
             ClientKind = ClientKind,
             ProviderName = Name,
-            DisplayWindow = displayWindow,
-            GameWindow = gameWindow,
+            DisplayWindow = target.DisplayWindow,
+            GameWindow = target.GameWindow ?? target.DisplayWindow,
         };
     }
 
