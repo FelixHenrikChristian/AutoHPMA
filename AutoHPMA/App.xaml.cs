@@ -8,6 +8,7 @@ using AutoHPMA.Services;
 using AutoHPMA.Services.GameWindowProviders;
 using AutoHPMA.Contracts.Tasks;
 using AutoHPMA.Tasks.Permanent;
+using AutoHPMA.Tasks.Temporary;
 using AutoHPMA.ViewModels;
 using AutoHPMA.ViewModels.TestPages;
 using AutoHPMA.Views;
@@ -84,6 +85,7 @@ public partial class App : Application
             services.AddSingleton<IGameWindowProvider, OfficialLauncherGameWindowProvider>();
             services.AddSingleton<IAutomationRuntimeService, AutomationRuntimeService>();
             services.AddSingleton<IAutomationTaskFactory, AutoForbiddenForestTaskFactory>();
+            services.AddSingleton<IAutomationTaskFactory, AutoSweetAdventureTaskFactory>();
             services.AddSingleton<IAutomationTaskRunner, AutomationTaskRunner>();
             services.AddTransient<INavigationViewService, NavigationViewService>();
 
