@@ -84,6 +84,7 @@ public partial class App : Application
             services.AddSingleton<IGameWindowProvider, MumuGameWindowProvider>();
             services.AddSingleton<IGameWindowProvider, OfficialLauncherGameWindowProvider>();
             services.AddSingleton<IAutomationRuntimeService, AutomationRuntimeService>();
+            services.AddSingleton<IAutomationTaskFactory, AutoClubQuizTaskFactory>();
             services.AddSingleton<IAutomationTaskFactory, AutoForbiddenForestTaskFactory>();
             services.AddSingleton<IAutomationTaskFactory, AutoSweetAdventureTaskFactory>();
             services.AddSingleton<IAutomationTaskRunner, AutomationTaskRunner>();

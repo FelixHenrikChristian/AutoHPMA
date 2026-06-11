@@ -29,6 +29,27 @@ public sealed class OcrService : IOcrService
         };
     }
 
+    public async Task<string> RecognizeAsync(
+        Mat mat,
+        OcrEngineType engineType,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(mat);
+        if (mat.Empty())
+        {
+            return string.Empty;
+        }
+
+        return engineType switch
+        {
+            OcrEngineType.WindowsOCR => await RecognizeWithWindowsOcrAsync(mat, cancellationToken),
+            OcrEngineType.PaddleOCR => await RecognizeWithMatAsync(mat, static input => PaddleOCRHelper.Instance.Ocr(input), cancellationToken),
+            OcrEngineType.RapidOCR => await RecognizeWithMatAsync(mat, static input => RapidOCRHelper.Instance.Ocr(input), cancellationToken),
+            OcrEngineType.TesseractOCR => await RecognizeWithMatAsync(mat, static input => TesseractOCRHelper.Instance.Ocr(input), cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(engineType), engineType, "不支持的 OCR 引擎。"),
+        };
+    }
+
     private async Task<string> RecognizeWithWindowsOcrAsync(SoftwareBitmap bitmap, CancellationToken cancellationToken)
     {
         var engine = _windowsOcrEngine.Value
@@ -62,6 +83,12 @@ public sealed class OcrService : IOcrService
         }
     }
 
+    private async Task<string> RecognizeWithWindowsOcrAsync(Mat mat, CancellationToken cancellationToken)
+    {
+        using var bitmap = ToSoftwareBitmap(mat);
+        return await RecognizeWithWindowsOcrAsync(bitmap, cancellationToken);
+    }
+
     private static Task<string> RecognizeWithMatAsync(
         SoftwareBitmap bitmap,
         Func<Mat, string> recognizer,
@@ -73,6 +100,31 @@ public sealed class OcrService : IOcrService
             cancellationToken.ThrowIfCancellationRequested();
             return recognizer(mat);
         }, cancellationToken);
+
+    private static Task<string> RecognizeWithMatAsync(
+        Mat source,
+        Func<Mat, string> recognizer,
+        CancellationToken cancellationToken)
+        => Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var mat = ToBgrMat(source);
+            cancellationToken.ThrowIfCancellationRequested();
+            return recognizer(mat);
+        }, cancellationToken);
+
+    private static SoftwareBitmap ToSoftwareBitmap(Mat mat)
+    {
+        using var bgra = ToBgraMat(mat);
+        var bitmap = new SoftwareBitmap(
+            BitmapPixelFormat.Bgra8,
+            bgra.Width,
+            bgra.Height,
+            BitmapAlphaMode.Premultiplied);
+
+        bitmap.CopyFromBuffer(CopyBgraPixels(bgra).AsBuffer());
+        return bitmap;
+    }
 
     private static Mat ToBgrMat(SoftwareBitmap bitmap)
     {
@@ -102,6 +154,47 @@ public sealed class OcrService : IOcrService
         {
             converted?.Dispose();
         }
+    }
+
+    private static Mat ToBgrMat(Mat mat)
+    {
+        return mat.Channels() switch
+        {
+            1 => ConvertMat(mat, ColorConversionCodes.GRAY2BGR),
+            3 => mat.Clone(),
+            4 => ConvertMat(mat, ColorConversionCodes.BGRA2BGR),
+            _ => throw new ArgumentException("OCR 只支持灰度、BGR 或 BGRA 图像。", nameof(mat)),
+        };
+    }
+
+    private static Mat ToBgraMat(Mat mat)
+    {
+        return mat.Channels() switch
+        {
+            1 => ConvertMat(mat, ColorConversionCodes.GRAY2BGRA),
+            3 => ConvertMat(mat, ColorConversionCodes.BGR2BGRA),
+            4 => mat.Clone(),
+            _ => throw new ArgumentException("OCR 只支持灰度、BGR 或 BGRA 图像。", nameof(mat)),
+        };
+    }
+
+    private static Mat ConvertMat(Mat source, ColorConversionCodes conversion)
+    {
+        var converted = new Mat();
+        Cv2.CvtColor(source, converted, conversion);
+        return converted;
+    }
+
+    private static byte[] CopyBgraPixels(Mat bgra)
+    {
+        var rowBytes = checked(bgra.Width * 4);
+        var pixels = new byte[checked(rowBytes * bgra.Height)];
+        for (var y = 0; y < bgra.Height; y++)
+        {
+            Marshal.Copy(bgra.Ptr(y), pixels, y * rowBytes, rowBytes);
+        }
+
+        return pixels;
     }
 
     private static OcrEngine? CreateWindowsOcrEngine()

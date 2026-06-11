@@ -1,3 +1,4 @@
+using OpenCvSharp;
 using Windows.Graphics.Imaging;
 
 namespace AutoHPMA.Contracts.Services;
@@ -14,6 +15,11 @@ public interface IOcrService
 {
     Task<string> RecognizeAsync(
         SoftwareBitmap bitmap,
+        OcrEngineType engineType,
+        CancellationToken cancellationToken = default);
+
+    Task<string> RecognizeAsync(
+        Mat mat,
         OcrEngineType engineType,
         CancellationToken cancellationToken = default);
 }
