@@ -1,0 +1,32 @@
+{
+  "Name": "香草战斧牛排",
+  "ImagePath": "Dishes/香草战斧牛排.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "grill",
+    "wok"
+  ],
+  "RequiredIngredients": [
+    "steak",
+    "vanilla"
+  ],
+  "RequiredCondiments": [
+    "coconut",
+    "salt"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "steak",
+      "TargetKitchenware": "wok"
+    },
+    {
+      "Ingredient": "vanilla",
+      "TargetKitchenware": "grill"
+    }
+  ],
+  "CondimentPositions": {
+    "coconut": 3,
+    "salt": 4
+  }
+}

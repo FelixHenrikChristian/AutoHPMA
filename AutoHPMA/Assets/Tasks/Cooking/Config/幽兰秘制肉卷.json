@@ -1,0 +1,32 @@
+{
+  "Name": "幽兰秘制肉卷",
+  "ImagePath": "Dishes/幽兰秘制肉卷.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "grill",
+    "wok"
+  ],
+  "RequiredIngredients": [
+    "fig",
+    "softmeat"
+  ],
+  "RequiredCondiments": [
+    "laurel",
+    "onion"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "fig",
+      "TargetKitchenware": "wok"
+    },
+    {
+      "Ingredient": "softmeat",
+      "TargetKitchenware": "grill"
+    }
+  ],
+  "CondimentPositions": {
+    "laurel": 3,
+    "onion": 4
+  }
+}

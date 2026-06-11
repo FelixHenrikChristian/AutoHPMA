@@ -1,0 +1,26 @@
+{
+  "Name": "盐烤海虾",
+  "ImagePath": "Dishes/盐烤海虾.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "grill"
+  ],
+  "RequiredIngredients": [
+    "shrimp"
+  ],
+  "RequiredCondiments": [
+    "lemon",
+    "salt"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "shrimp",
+      "TargetKitchenware": "grill"
+    }
+  ],
+  "CondimentPositions": {
+    "lemon": 3,
+    "salt": 4
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "Name": "奶油蟹粉面",
+  "ImagePath": "Dishes/奶油蟹粉面.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "wok",
+    "pot"
+  ],
+  "RequiredIngredients": [
+    "crab",
+    "pasta"
+  ],
+  "RequiredCondiments": [
+    "cream",
+    "honey"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "crab",
+      "TargetKitchenware": "wok"
+    },
+    {
+      "Ingredient": "pasta",
+      "TargetKitchenware": "pot"
+    }
+  ],
+  "CondimentPositions": {
+    "cream": 3,
+    "honey": 4
+  }
+}

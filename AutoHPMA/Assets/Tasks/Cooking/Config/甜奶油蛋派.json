@@ -1,0 +1,26 @@
+{
+  "Name": "甜奶油蛋派",
+  "ImagePath": "Dishes/甜奶油蛋派.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "oven"
+  ],
+  "RequiredIngredients": [
+    "giantegg"
+  ],
+  "RequiredCondiments": [
+    "cream",
+    "honey"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "giantegg",
+      "TargetKitchenware": "oven"
+    }
+  ],
+  "CondimentPositions": {
+    "cream": 3,
+    "honey": 4
+  }
+}

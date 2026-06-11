@@ -1,0 +1,31 @@
+{
+  "Name": "香草风味烤扇贝",
+  "ImagePath": "Dishes/香草风味烤扇贝.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "grill"
+  ],
+  "RequiredIngredients": [
+    "scallop",
+    "vanilla"
+  ],
+  "RequiredCondiments": [
+    "lemon",
+    "salt"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "scallop",
+      "TargetKitchenware": "grill"
+    },
+    {
+      "Ingredient": "vanilla",
+      "TargetKitchenware": "grill"
+    }
+  ],
+  "CondimentPositions": {
+    "coconut": 3,
+    "salt": 4
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "Name": "奶油蘑菇炖饭",
+  "ImagePath": "Dishes/奶油蘑菇炖饭.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "wok",
+    "pot"
+  ],
+  "RequiredIngredients": [
+    "rice",
+    "mushroom"
+  ],
+  "RequiredCondiments": [
+    "wine",
+    "coconut"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "mushroom",
+      "TargetKitchenware": "wok"
+    },
+    {
+      "Ingredient": "rice",
+      "TargetKitchenware": "pot"
+    }
+  ],
+  "CondimentPositions": {
+    "wine": 3,
+    "coconut": 4
+  }
+}

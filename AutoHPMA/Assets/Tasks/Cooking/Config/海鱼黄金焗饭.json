@@ -1,0 +1,32 @@
+{
+  "Name": "海鱼黄金焗饭",
+  "ImagePath": "Dishes/海鱼黄金焗饭.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "oven",
+    "pot"
+  ],
+  "RequiredIngredients": [
+    "rice",
+    "fish"
+  ],
+  "RequiredCondiments": [
+    "cream",
+    "onion"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "fish",
+      "TargetKitchenware": "oven"
+    },
+    {
+      "Ingredient": "rice",
+      "TargetKitchenware": "pot"
+    }
+  ],
+  "CondimentPositions": {
+    "cream": 3,
+    "onion": 4
+  }
+}

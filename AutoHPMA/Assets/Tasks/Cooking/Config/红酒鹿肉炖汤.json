@@ -1,0 +1,32 @@
+{
+  "Name": "红酒鹿肉炖汤",
+  "ImagePath": "Dishes/红酒鹿肉炖汤.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "wok",
+    "pot"
+  ],
+  "RequiredIngredients": [
+    "venison",
+    "fig"
+  ],
+  "RequiredCondiments": [
+    "wine",
+    "laurel"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "venison",
+      "TargetKitchenware": "pot"
+    },
+    {
+      "Ingredient": "fig",
+      "TargetKitchenware": "wok"
+    }
+  ],
+  "CondimentPositions": {
+    "wine": 3,
+    "laurel": 4
+  }
+}

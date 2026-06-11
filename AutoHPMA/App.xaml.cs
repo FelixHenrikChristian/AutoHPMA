@@ -86,6 +86,7 @@ public partial class App : Application
             services.AddSingleton<IAutomationRuntimeService, AutomationRuntimeService>();
             services.AddSingleton<IAutomationTaskFactory, AutoClubQuizTaskFactory>();
             services.AddSingleton<IAutomationTaskFactory, AutoForbiddenForestTaskFactory>();
+            services.AddSingleton<IAutomationTaskFactory, AutoCookingTaskFactory>();
             services.AddSingleton<IAutomationTaskFactory, AutoSweetAdventureTaskFactory>();
             services.AddSingleton<IAutomationTaskRunner, AutomationTaskRunner>();
             services.AddTransient<INavigationViewService, NavigationViewService>();

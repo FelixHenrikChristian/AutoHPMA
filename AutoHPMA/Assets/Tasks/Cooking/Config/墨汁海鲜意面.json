@@ -1,0 +1,32 @@
+{
+  "Name": "墨汁海鲜意面",
+  "ImagePath": "Dishes/墨汁海鲜意面.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "oven",
+    "pot"
+  ],
+  "RequiredIngredients": [
+    "squid",
+    "pasta"
+  ],
+  "RequiredCondiments": [
+    "wine",
+    "laurel"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "squid",
+      "TargetKitchenware": "oven"
+    },
+    {
+      "Ingredient": "pasta",
+      "TargetKitchenware": "pot"
+    }
+  ],
+  "CondimentPositions": {
+    "wine": 3,
+    "laurel": 4
+  }
+}

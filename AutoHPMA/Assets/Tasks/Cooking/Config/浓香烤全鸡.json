@@ -1,0 +1,26 @@
+{
+  "Name": "浓香烤全鸡",
+  "ImagePath": "Dishes/浓香烤全鸡.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "oven"
+  ],
+  "RequiredIngredients": [
+    "chicken"
+  ],
+  "RequiredCondiments": [
+    "onion",
+    "honey"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "chicken",
+      "TargetKitchenware": "oven"
+    }
+  ],
+  "CondimentPositions": {
+    "onion": 3,
+    "honey": 4
+  }
+}

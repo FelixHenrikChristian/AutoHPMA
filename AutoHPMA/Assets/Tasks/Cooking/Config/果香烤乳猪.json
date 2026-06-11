@@ -1,0 +1,26 @@
+{
+  "Name": "果香烤乳猪",
+  "ImagePath": "Dishes/果香烤乳猪.png",
+  "RequiredKitchenware": [
+    "bin",
+    "board",
+    "oven"
+  ],
+  "RequiredIngredients": [
+    "pork"
+  ],
+  "RequiredCondiments": [
+    "lemon",
+    "coconut"
+  ],
+  "CookingSteps": [
+    {
+      "Ingredient": "pork",
+      "TargetKitchenware": "oven"
+    }
+  ],
+  "CondimentPositions": {
+    "lemon": 2,
+    "coconut": 3
+  }
+}
