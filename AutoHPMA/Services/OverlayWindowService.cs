@@ -74,10 +74,10 @@ public sealed class OverlayWindowService : IOverlayWindowService
     public void SetGameState(string state) =>
         RunOnUiThread(() => _logWindow?.SetGameState(state));
 
-    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 500) =>
+    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 1000) =>
         RunOnUiThread(() => _maskWindow?.AddTemporaryRegion(region, durationMs));
 
-    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500) =>
+    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 1000) =>
         RunOnUiThread(() => _maskWindow?.AddTemporaryRegions(regions, durationMs));
 
     public void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions) =>

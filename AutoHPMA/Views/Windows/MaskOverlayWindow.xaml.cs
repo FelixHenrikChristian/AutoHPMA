@@ -22,6 +22,16 @@ public sealed partial class MaskOverlayWindow : WindowEx
         public DateTime ExpireTime { get; init; }
     }
 
+    private sealed record RegionStyle(Color StrokeColor, double StrokeThickness, byte FillAlpha, bool Dashed = false);
+
+    private static readonly Color RecognitionColor = Color.FromArgb(0xFF, 0x2F, 0xD7, 0xFF);
+    private static readonly Color MatchResultColor = Color.FromArgb(0xFF, 0xFF, 0xD7, 0x2F);
+    private static readonly RegionStyle StateIndicatorStyle = new(RecognitionColor, 2, 0x18);
+    private static readonly RegionStyle TaskStateStyle = new(RecognitionColor, 1.5, 0x14);
+    private static readonly RegionStyle TemplateMatchStyle = new(MatchResultColor, 1.5, 0x14);
+    private static readonly RegionStyle TemporaryMatchStyle = new(MatchResultColor, 1.5, 0x14, true);
+    private static readonly RegionStyle OcrStyle = new(RecognitionColor, 1.5, 0x14);
+
     private readonly object _gate = new();
     private readonly List<TemporaryRegion> _temporaryRegions = [];
     private readonly List<RegionData> _stateIndicatorRegions = [];
@@ -51,7 +61,7 @@ public sealed partial class MaskOverlayWindow : WindowEx
 
     public bool ShowTextLabels { get; set; } = true;
 
-    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 500)
+    public void AddTemporaryRegion(OverlayRegion region, int durationMs = 1000)
     {
         lock (_gate)
         {
@@ -65,7 +75,7 @@ public sealed partial class MaskOverlayWindow : WindowEx
         Redraw();
     }
 
-    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500)
+    public void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 1000)
     {
         var expireTime = DateTime.Now.AddMilliseconds(durationMs);
         lock (_gate)
@@ -173,22 +183,22 @@ public sealed partial class MaskOverlayWindow : WindowEx
         {
             foreach (var stateRegion in _stateIndicatorRegions)
             {
-                DrawRegion(stateRegion.Region, Colors.LimeGreen, scale, canvasWidth, canvasHeight);
+                DrawRegion(stateRegion.Region, StateIndicatorStyle, scale, canvasWidth, canvasHeight);
             }
 
             foreach (var taskRegion in _taskStateRegions)
             {
-                DrawRegion(taskRegion.Region, Colors.DeepSkyBlue, scale, canvasWidth, canvasHeight);
+                DrawRegion(taskRegion.Region, TaskStateStyle, scale, canvasWidth, canvasHeight);
             }
 
             foreach (var tempRegion in _temporaryRegions)
             {
-                DrawRegion(tempRegion.Region, Colors.MediumPurple, scale, canvasWidth, canvasHeight);
+                DrawRegion(tempRegion.Region, TemporaryMatchStyle, scale, canvasWidth, canvasHeight);
             }
         }
     }
 
-    private void DrawRegion(OverlayRegion region, Color color, double scale, double canvasWidth, double canvasHeight)
+    private void DrawRegion(OverlayRegion region, RegionStyle style, double scale, double canvasWidth, double canvasHeight)
     {
         if (region.Width <= 0 || region.Height <= 0)
         {
@@ -204,15 +214,21 @@ public sealed partial class MaskOverlayWindow : WindowEx
             return;
         }
 
+        style = ResolveStyle(region, style);
+        var color = style.StrokeColor;
         var stroke = new SolidColorBrush(color);
         var shape = new Rectangle
         {
             Stroke = stroke,
-            StrokeThickness = 2,
-            Fill = new SolidColorBrush(Color.FromArgb(0x18, color.R, color.G, color.B)),
+            StrokeThickness = style.StrokeThickness,
+            Fill = new SolidColorBrush(Color.FromArgb(style.FillAlpha, color.R, color.G, color.B)),
             Width = width,
             Height = height,
         };
+        if (style.Dashed)
+        {
+            shape.StrokeDashArray = new DoubleCollection { 4, 2 };
+        }
 
         Canvas.SetLeft(shape, x);
         Canvas.SetTop(shape, y);
@@ -230,9 +246,34 @@ public sealed partial class MaskOverlayWindow : WindowEx
 
         if (!string.IsNullOrWhiteSpace(region.StatusText))
         {
-            AddStatusText(region.StatusText, x, y, width, height);
+            if (region.StatusKind == OverlayRegionStatusKind.Detail)
+            {
+                AddDetailStatusText(region.StatusText, stroke, x, y, width, canvasWidth, canvasHeight);
+            }
+            else
+            {
+                if (region.Kind == OverlayRegionKind.TemplateMatch)
+                {
+                    AddMatchScoreText(region.StatusText, stroke, x, y, height, canvasWidth, canvasHeight);
+                }
+                else
+                {
+                    AddInlineStatusText(region.StatusText, stroke, x, y, width, height, canvasWidth, canvasHeight);
+                }
+            }
         }
     }
+
+    private static RegionStyle ResolveStyle(OverlayRegion region, RegionStyle defaultStyle) =>
+        region.Kind switch
+        {
+            OverlayRegionKind.Ocr => OcrStyle,
+            OverlayRegionKind.TemplateMatch when ReferenceEquals(defaultStyle, StateIndicatorStyle) => defaultStyle,
+            OverlayRegionKind.TemplateMatch => ReferenceEquals(defaultStyle, TemporaryMatchStyle)
+                ? TemporaryMatchStyle
+                : TemplateMatchStyle,
+            _ => defaultStyle,
+        };
 
     private void AddNameLabel(
         string name,
@@ -267,33 +308,136 @@ public sealed partial class MaskOverlayWindow : WindowEx
         OverlayCanvas.Children.Add(labelElement);
     }
 
-    private void AddStatusText(string statusText, double x, double y, double width, double height)
+    private void AddMatchScoreText(
+        string statusText,
+        Brush foregroundBrush,
+        double x,
+        double y,
+        double height,
+        double canvasWidth,
+        double canvasHeight)
     {
-        var maxWidth = Math.Max(24, width - 8);
         var statusElement = new Border
         {
-            MaxWidth = maxWidth,
-            Padding = new Thickness(5, 1, 5, 1),
-            Background = new SolidColorBrush(Color.FromArgb(0xB8, 0, 0, 0)),
-            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(3, 0, 3, 0),
+            Background = new SolidColorBrush(Color.FromArgb(0xD8, 0, 0, 0)),
+            BorderBrush = foregroundBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
             Child = new TextBlock
             {
                 Text = statusText,
-                FontSize = 11,
-                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                FontSize = 9,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(Colors.White),
-                TextAlignment = TextAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                TextTrimming = TextTrimming.Clip,
             },
         };
 
-        statusElement.Measure(new global::Windows.Foundation.Size(maxWidth, double.PositiveInfinity));
-        var desiredWidth = Math.Min(statusElement.DesiredSize.Width, maxWidth);
+        statusElement.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var desiredWidth = statusElement.DesiredSize.Width;
         var desiredHeight = statusElement.DesiredSize.Height;
+        var labelLeft = Math.Max(0, Math.Min(x, Math.Max(0, canvasWidth - desiredWidth - 2)));
+        var bottomOutsideTop = y + height + 2;
+        var labelTop = bottomOutsideTop <= canvasHeight - desiredHeight - 2
+            ? bottomOutsideTop
+            : Math.Max(0, y - desiredHeight - 2);
 
-        Canvas.SetLeft(statusElement, x + Math.Max(4, (width - desiredWidth) / 2));
-        Canvas.SetTop(statusElement, y + Math.Max(4, height - desiredHeight - 6));
+        Canvas.SetLeft(statusElement, labelLeft);
+        Canvas.SetTop(statusElement, Math.Max(0, Math.Min(labelTop, Math.Max(0, canvasHeight - desiredHeight - 2))));
         OverlayCanvas.Children.Add(statusElement);
+    }
+
+    private void AddInlineStatusText(
+        string statusText,
+        Brush foregroundBrush,
+        double x,
+        double y,
+        double width,
+        double height,
+        double canvasWidth,
+        double canvasHeight)
+    {
+        var statusElement = new Border
+        {
+            Padding = new Thickness(3, 0, 3, 0),
+            Background = new SolidColorBrush(Color.FromArgb(0xD8, 0, 0, 0)),
+            BorderBrush = foregroundBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
+            Child = new TextBlock
+            {
+                Text = statusText,
+                FontSize = 9,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Colors.White),
+                TextTrimming = TextTrimming.Clip,
+            },
+        };
+
+        statusElement.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var desiredWidth = statusElement.DesiredSize.Width;
+        var desiredHeight = statusElement.DesiredSize.Height;
+        var labelLeft = x + Math.Max(2, (width - desiredWidth) / 2);
+        var labelTop = height >= desiredHeight + 4
+            ? y + height - desiredHeight - 2
+            : y + 1;
+
+        Canvas.SetLeft(statusElement, Math.Max(0, Math.Min(labelLeft, Math.Max(0, canvasWidth - desiredWidth - 2))));
+        Canvas.SetTop(statusElement, Math.Max(0, Math.Min(labelTop, Math.Max(0, canvasHeight - desiredHeight - 2))));
+        OverlayCanvas.Children.Add(statusElement);
+    }
+
+    private void AddDetailStatusText(
+        string statusText,
+        Brush borderBrush,
+        double x,
+        double y,
+        double width,
+        double canvasWidth,
+        double canvasHeight)
+    {
+        if (string.IsNullOrWhiteSpace(statusText))
+        {
+            return;
+        }
+
+        var maximumCanvasLabelWidth = Math.Max(0, canvasWidth - 16);
+        if (maximumCanvasLabelWidth <= 0)
+        {
+            return;
+        }
+
+        var labelMaxWidth = Math.Min(Math.Max(width, 180), maximumCanvasLabelWidth);
+        var labelLeft = Math.Max(0, Math.Min(x, Math.Max(0, canvasWidth - labelMaxWidth - 8)));
+        var labelElement = new Border
+        {
+            MaxWidth = labelMaxWidth,
+            Padding = new Thickness(6, 3, 6, 3),
+            Background = new SolidColorBrush(Color.FromArgb(0xD8, 0, 0, 0)),
+            BorderBrush = borderBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Child = new TextBlock
+            {
+                Text = statusText.Trim(),
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Colors.White),
+                MaxLines = 3,
+                TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.WordEllipsis,
+            },
+        };
+
+        labelElement.Measure(new global::Windows.Foundation.Size(labelMaxWidth, double.PositiveInfinity));
+        var desiredHeight = labelElement.DesiredSize.Height;
+        var labelTop = y >= desiredHeight + 4
+            ? y - desiredHeight - 4
+            : Math.Min(y + 4, Math.Max(0, canvasHeight - desiredHeight - 4));
+
+        Canvas.SetLeft(labelElement, labelLeft);
+        Canvas.SetTop(labelElement, labelTop);
+        OverlayCanvas.Children.Add(labelElement);
     }
 
     private double GetRasterizationScale()

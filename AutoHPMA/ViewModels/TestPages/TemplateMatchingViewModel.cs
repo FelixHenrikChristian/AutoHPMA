@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using AutoHPMA.Contracts.Services;
 using AutoHPMA.Core.Contracts.Services;
 using AutoHPMA.Core.Models;
@@ -244,7 +245,24 @@ public partial class TemplateMatchingViewModel : ObservableObject
         }
 
         return string.Join(Environment.NewLine,
-            regions.Select(r => $"X: {r.X}, Y: {r.Y}, Width: {r.Width}, Height: {r.Height}"));
+            regions.Select(r =>
+                $"X: {r.X}, Y: {r.Y}, Width: {r.Width}, Height: {r.Height}{FormatScore(r.Score)}"));
+    }
+
+    private static string FormatScore(double? score)
+    {
+        if (!score.HasValue)
+        {
+            return string.Empty;
+        }
+
+        var value = score.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return string.Empty;
+        }
+
+        return $", Score: {(Math.Clamp(value, 0d, 1d) * 100d).ToString("0.0", CultureInfo.InvariantCulture)}%";
     }
 
     private static FileOpenPicker CreateImageOpenPicker()

@@ -13,9 +13,9 @@ public interface IOverlayWindowService : IDisposable
 
     void SetGameState(string state);
 
-    void AddTemporaryRegion(OverlayRegion region, int durationMs = 500);
+    void AddTemporaryRegion(OverlayRegion region, int durationMs = 1000);
 
-    void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 500);
+    void AddTemporaryRegions(IReadOnlyList<OverlayRegion> regions, int durationMs = 1000);
 
     void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions);
 

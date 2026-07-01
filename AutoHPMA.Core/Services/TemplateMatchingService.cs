@@ -460,7 +460,8 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
             }
 
             var location = isSqDiff ? minLoc : maxLoc;
-            regions.Add(new TemplateMatchRegion(location.X, location.Y, templateMat.Width, templateMat.Height));
+            var score = NormalizeScore(isSqDiff ? 1d - minValue : maxValue);
+            regions.Add(new TemplateMatchRegion(location.X, location.Y, templateMat.Width, templateMat.Height, score));
 
             var suppressed = ClampRectToMat(
                 new Rect(location.X, location.Y, templateMat.Width, templateMat.Height),
@@ -469,6 +470,16 @@ public sealed class TemplateMatchingService : ITemplateMatchingService
         }
 
         return regions;
+    }
+
+    private static double NormalizeScore(double score)
+    {
+        if (double.IsNaN(score) || double.IsInfinity(score))
+        {
+            return 0;
+        }
+
+        return Math.Clamp(score, 0d, 1d);
     }
 
     private static Mat? CreateResultRoiMask(

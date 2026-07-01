@@ -150,7 +150,7 @@ public abstract class AutomationTaskBase<TOptions> : IAutomationTask
         return true;
     }
 
-    protected void ShowMatchRegions(TemplateSearchResult result, int durationMs = 500)
+    protected void ShowMatchRegions(TemplateSearchResult result, int durationMs = 1000)
     {
         if (result.Success)
         {

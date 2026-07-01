@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using AutoHPMA.Capture.Models;
 using AutoHPMA.Capture.Native;
@@ -169,23 +170,50 @@ public sealed class AutomationTaskContext
     public Task SendSpaceAsync(CancellationToken cancellationToken = default) =>
         SendKeyAsync(0x20, cancellationToken);
 
-    public OverlayRegion ToOverlayRegion(TemplateMatchRegion region, string? name = null, string? statusText = null)
+    public OverlayRegion ToOverlayRegion(
+        TemplateMatchRegion region,
+        string? name = null,
+        string? statusText = null,
+        OverlayRegionStatusKind statusKind = OverlayRegionStatusKind.Inline,
+        OverlayRegionKind kind = OverlayRegionKind.Default)
     {
         RefreshGeometry();
+        var scoreText = FormatMatchScore(region.Score);
         return new OverlayRegion(
             (int)Math.Round(region.X * CoordinateScale),
             (int)Math.Round(region.Y * CoordinateScale),
             Math.Max(1, (int)Math.Round(region.Width * CoordinateScale)),
             Math.Max(1, (int)Math.Round(region.Height * CoordinateScale)),
             name,
-            statusText);
+            statusText ?? scoreText,
+            statusKind,
+            kind == OverlayRegionKind.Default && scoreText is not null
+                ? OverlayRegionKind.TemplateMatch
+                : kind);
     }
 
     public IReadOnlyList<OverlayRegion> ToOverlayRegions(
         IEnumerable<TemplateMatchRegion> regions,
-        string? name = null)
+        string? name = null,
+        OverlayRegionKind kind = OverlayRegionKind.Default)
     {
-        return regions.Select(region => ToOverlayRegion(region, name)).ToArray();
+        return regions.Select(region => ToOverlayRegion(region, name, kind: kind)).ToArray();
+    }
+
+    private static string? FormatMatchScore(double? score)
+    {
+        if (!score.HasValue)
+        {
+            return null;
+        }
+
+        var value = score.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return null;
+        }
+
+        return (Math.Clamp(value, 0d, 1d) * 100d).ToString("0", CultureInfo.InvariantCulture) + "%";
     }
 
     private static Mat CreateBgraMat(CapturedFrame frame)

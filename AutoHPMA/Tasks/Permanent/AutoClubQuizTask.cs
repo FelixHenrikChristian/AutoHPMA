@@ -353,6 +353,7 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
     private async Task AcquireAnswerAsync(CancellationToken cancellationToken)
     {
         var text = await RecognizeQuestionTextAsync(cancellationToken);
+        UpdateRecognizedTextRegions(text);
         var match = _questionBank.FindBestMatch(text.Question);
         var bestOption = ClubQuizQuestionBank.FindBestOption(
             match.Answer,
@@ -455,6 +456,47 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
             await RecognizeAsync(index, engineType, cancellationToken));
     }
 
+    private void UpdateRecognizedTextRegions(QuizRecognizedText text)
+    {
+        var regions = new List<OverlayRegion>();
+        if (_questionLocated)
+        {
+            AddOcrOverlayRegion(regions, _questionRect, text.Question);
+        }
+
+        foreach (var (option, rect) in _optionRects.OrderBy(pair => pair.Key))
+        {
+            AddOcrOverlayRegion(regions, rect, option switch
+            {
+                'A' => text.OptionA,
+                'B' => text.OptionB,
+                'C' => text.OptionC,
+                'D' => text.OptionD,
+                _ => string.Empty,
+            });
+        }
+
+        if (_indexRect.Width > 0 && _indexRect.Height > 0)
+        {
+            AddOcrOverlayRegion(regions, _indexRect, text.Index);
+        }
+
+        if (regions.Count > 0)
+        {
+            Context.Overlay.SetTaskStateRegions(regions);
+        }
+    }
+
+    private void AddOcrOverlayRegion(List<OverlayRegion> regions, Rect rect, string text)
+    {
+        regions.Add(Context.ToOverlayRegion(
+            ToTemplateRegion(rect),
+            null,
+            FormatOcrOverlayText(text),
+            OverlayRegionStatusKind.Detail,
+            OverlayRegionKind.Ocr));
+    }
+
     private async Task<string> RecognizeAsync(
         Mat mat,
         OcrEngineType engineType,
@@ -552,21 +594,36 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
 
     private void UpdateLocatedRegions(IEnumerable<TemplateMatchRegion>? extraRegions = null)
     {
-        var regions = new List<TemplateMatchRegion>();
-        regions.AddRange(_optionRects.Values.Select(ToTemplateRegion));
+        var regions = new List<OverlayRegion>();
+        foreach (var (option, rect) in _optionRects.OrderBy(pair => pair.Key))
+        {
+            regions.Add(Context.ToOverlayRegion(
+                ToTemplateRegion(rect),
+                kind: OverlayRegionKind.Ocr));
+        }
+
         if (_questionLocated)
         {
-            regions.Add(ToTemplateRegion(_questionRect));
+            regions.Add(Context.ToOverlayRegion(
+                ToTemplateRegion(_questionRect),
+                kind: OverlayRegionKind.Ocr));
+        }
+
+        if (_indexRect.Width > 0 && _indexRect.Height > 0)
+        {
+            regions.Add(Context.ToOverlayRegion(
+                ToTemplateRegion(_indexRect),
+                kind: OverlayRegionKind.Ocr));
         }
 
         if (extraRegions is not null)
         {
-            regions.AddRange(extraRegions);
+            regions.AddRange(Context.ToOverlayRegions(extraRegions));
         }
 
         if (regions.Count > 0)
         {
-            SetTaskStateRegions(regions);
+            Context.Overlay.SetTaskStateRegions(regions);
         }
     }
 
@@ -596,6 +653,17 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
         await Context.ClickMatchCenterAsync(region, token);
         return true;
     }
+
+    private static string FormatOcrOverlayText(string text)
+    {
+        var normalized = Regex.Replace(text ?? string.Empty, "\\s+", " ").Trim();
+        return string.IsNullOrWhiteSpace(normalized)
+            ? "未识别"
+            : TruncateOverlayText(normalized, 80);
+    }
+
+    private static string TruncateOverlayText(string text, int maxLength) =>
+        text.Length <= maxLength ? text : text[..maxLength] + "...";
 
     private static string NormalizeProgress(string? input)
     {
