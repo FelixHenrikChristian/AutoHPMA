@@ -1,13 +1,16 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using AutoHPMA.Capture.Models;
 using AutoHPMA.Capture.Native;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
+using Windows.Foundation.Metadata;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Security.Authorization.AppCapabilityAccess;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
 
@@ -19,6 +22,9 @@ namespace AutoHPMA.Capture;
 public sealed class WindowsGraphicsCapture : IScreenCapture
 {
     private const DirectXPixelFormat PixelFormat = DirectXPixelFormat.B8G8R8A8UIntNormalized;
+
+    private static readonly object BorderlessAccessLock = new();
+    private static AppCapabilityAccessStatus? _borderlessAccessStatus;
 
     private readonly object _lock = new();
 
@@ -186,14 +192,68 @@ public sealed class WindowsGraphicsCapture : IScreenCapture
 
     private static void TryDisableDecorations(GraphicsCaptureSession session)
     {
-        // 这些属性在较新的 Windows 版本上才有；用反射式检查避免低版本崩溃。
-        try { session.IsCursorCaptureEnabled = false; } catch { /* ignore */ }
+        // 这些属性在较新的 Windows 版本上才有；先做 API/权限检查，避免低版本或未授权时崩溃。
         try
         {
-            var prop = typeof(GraphicsCaptureSession).GetProperty("IsBorderRequired");
-            prop?.SetValue(session, false);
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041) &&
+                ApiInformation.IsPropertyPresent(
+                    "Windows.Graphics.Capture.GraphicsCaptureSession",
+                    "IsCursorCaptureEnabled"))
+            {
+                session.IsCursorCaptureEnabled = false;
+            }
         }
         catch { /* ignore */ }
+
+        try
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 18362) ||
+                !IsBorderlessCaptureApiPresent())
+            {
+                return;
+            }
+
+            if (IsBorderlessAccessAllowed())
+            {
+                session.IsBorderRequired = false;
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    private static bool IsBorderlessCaptureApiPresent()
+    {
+        return ApiInformation.IsTypePresent("Windows.Graphics.Capture.GraphicsCaptureAccess")
+            && ApiInformation.IsEnumNamedValuePresent(
+                "Windows.Graphics.Capture.GraphicsCaptureAccessKind",
+                nameof(GraphicsCaptureAccessKind.Borderless))
+            && ApiInformation.IsPropertyPresent(
+                "Windows.Graphics.Capture.GraphicsCaptureSession",
+                nameof(GraphicsCaptureSession.IsBorderRequired));
+    }
+
+    private static bool IsBorderlessAccessAllowed()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 18362))
+        {
+            return false;
+        }
+
+        lock (BorderlessAccessLock)
+        {
+            if (_borderlessAccessStatus.HasValue)
+            {
+                return _borderlessAccessStatus.Value == AppCapabilityAccessStatus.Allowed;
+            }
+
+            _borderlessAccessStatus = GraphicsCaptureAccess
+                .RequestAccessAsync(GraphicsCaptureAccessKind.Borderless)
+                .AsTask()
+                .GetAwaiter()
+                .GetResult();
+
+            return _borderlessAccessStatus.Value == AppCapabilityAccessStatus.Allowed;
+        }
     }
 
     public void Dispose()
