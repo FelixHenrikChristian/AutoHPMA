@@ -12,7 +12,6 @@ namespace AutoHPMA.Tasks.Permanent;
 internal enum ClubQuizState
 {
     Unknown,
-    Map,
     ClubScene,
     ChatFrame,
     Events,
@@ -22,11 +21,11 @@ internal enum ClubQuizState
     Victory,
 }
 
-public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
+internal sealed class AutoClubQuizTask :
+    StateMachineAutomationTaskBase<ClubQuizTaskOptions, ClubQuizState>
 {
     private const string ImageDirectory = "Assets/Tasks/ClubQuiz/Image";
     private const string QuestionBankPath = "Assets/Tasks/ClubQuiz/club_question_bank.xlsx";
-    private const int OpenMapKey = 0x4D;
     private const int DetectGapMilliseconds = 200;
 
     private static readonly double[] StateScaleFactors = [1d, 0.98d, 1.02d, 0.95d, 1.05d];
@@ -38,19 +37,18 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
         ScaleFactors = StateScaleFactors,
     };
 
-    private readonly Dictionary<string, Mat> _images;
     private readonly IReadOnlyList<AutomationTaskStateRule<ClubQuizState>> _stateRules;
     private readonly IOcrService _ocrService;
     private readonly ClubQuizQuestionBank _questionBank;
     private readonly Dictionary<char, Rect> _optionRects = [];
 
-    private int _stateValue = (int)ClubQuizState.Unknown;
     private GatherRefreshMode _gatherRefreshMode = GatherRefreshMode.Badge;
     private Rect _questionRect;
     private Rect _indexRect;
     private bool _optionLocated;
     private bool _questionLocated;
     private bool _quizOver = true;
+    private bool _unknownLogged;
     private bool _shouldStop;
     private int _roundIndex = 1;
 
@@ -58,15 +56,14 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
         ClubQuizTaskOptions options,
         ILogger<AutoClubQuizTask> logger,
         IOcrService ocrService)
-        : base(options, logger)
+        : base(options, logger, ClubQuizState.Unknown)
     {
         _ocrService = ocrService;
-        _images = LoadImagesFromDirectory(ImageDirectory, ImreadModes.Unchanged);
+        LoadTaskImages(ImageDirectory, ImreadModes.Unchanged);
         _questionBank = ClubQuizQuestionBank.Load(Path.Combine(AppContext.BaseDirectory, QuestionBankPath));
         _stateRules =
         [
             new([GetImage("ui_club_symbol")], ClubQuizState.ClubScene, "社团问答-社团场景", SearchOptions: StateSearchOptions),
-            new([GetImage("map_return")], ClubQuizState.Map, "社团问答-地图", SearchOptions: StateSearchOptions),
             new([GetImage("chat_mail"), GetImage("chat_whisper")], ClubQuizState.ChatFrame, "社团问答-聊天框", SearchOptions: StateSearchOptions),
             new([GetImage("badge_club_shop")], ClubQuizState.Events, "社团问答-活动选择", SearchOptions: StateSearchOptions),
             new([GetImage("quiz_wait")], ClubQuizState.Wait, "社团问答-集合中", SearchOptions: StateSearchOptions),
@@ -83,77 +80,67 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
 
     public override string DisplayName => "社团问答";
 
-    private ClubQuizState CurrentState
-    {
-        get => (ClubQuizState)Volatile.Read(ref _stateValue);
-        set => Volatile.Write(ref _stateValue, (int)value);
-    }
+    protected override ClubQuizState UnknownState => ClubQuizState.Unknown;
 
-    protected override async Task ExecuteAsync(
-        AutomationTaskContext context,
-        CancellationToken cancellationToken)
+    protected override string UnknownDisplayName => "社团问答-等待进入场景";
+
+    protected override IReadOnlyList<AutomationTaskStateRule<ClubQuizState>> StateRules => _stateRules;
+
+    protected override Task InitializeStateMachineAsync(CancellationToken cancellationToken)
     {
-        CurrentState = ClubQuizState.Unknown;
         ResetQuizState();
+        _unknownLogged = false;
         _shouldStop = false;
         _roundIndex = 1;
-
-        var monitorInterval = TimeSpan.FromMilliseconds(
-            Math.Max(context.RuntimeOptions?.StateMonitorInterval ?? 200, 50));
-        StartStateMonitor(
-            _stateRules,
-            OnStateDetected,
-            ClubQuizState.Unknown,
-            "社团问答-等待进入场景",
-            monitorInterval);
-
-        while (!cancellationToken.IsCancellationRequested && !_shouldStop)
-        {
-            await ExecuteLoopAsync(cancellationToken);
-        }
+        return Task.CompletedTask;
     }
 
-    private async Task ExecuteLoopAsync(CancellationToken cancellationToken)
+    protected override bool ShouldContinue(CancellationToken cancellationToken) =>
+        !cancellationToken.IsCancellationRequested && !_shouldStop;
+
+    protected override async Task HandleStateAsync(
+        ClubQuizState state,
+        CancellationToken cancellationToken)
     {
         await CloseDialogsAsync(cancellationToken);
 
-        switch (CurrentState)
+        switch (state)
         {
             case ClubQuizState.Unknown:
                 await HandleUnknownStateAsync(cancellationToken);
                 break;
-
-            case ClubQuizState.Map:
-                await HandleMapStateAsync(cancellationToken);
-                break;
-
             case ClubQuizState.ClubScene:
                 await HandleClubSceneStateAsync(cancellationToken);
                 break;
-
             case ClubQuizState.ChatFrame:
                 await HandleChatFrameStateAsync(cancellationToken);
                 break;
-
             case ClubQuizState.Events:
                 await HandleEventsStateAsync(cancellationToken);
                 break;
-
             case ClubQuizState.Wait:
                 await Task.Delay(1000, cancellationToken);
                 break;
-
             case ClubQuizState.Quiz:
                 await HandleQuizStateAsync(cancellationToken);
                 break;
-
             case ClubQuizState.Over:
                 await HandleOverStateAsync(cancellationToken);
                 break;
-
             case ClubQuizState.Victory:
                 await HandleVictoryStateAsync(cancellationToken);
                 break;
+        }
+    }
+
+    protected override void OnDetectedStateChanged(
+        ClubQuizState previousState,
+        ClubQuizState currentState)
+    {
+        base.OnDetectedStateChanged(previousState, currentState);
+        if (currentState != ClubQuizState.Unknown)
+        {
+            _unknownLogged = false;
         }
     }
 
@@ -165,23 +152,13 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
             return;
         }
 
-        Logger.LogDebug("社团问答未识别到场景，尝试打开地图。");
-        await Context.SendEscapeAsync(cancellationToken);
-        await Task.Delay(2000, cancellationToken);
-        await Context.SendKeyAsync(OpenMapKey, cancellationToken);
-        await Task.Delay(2000, cancellationToken);
-    }
+        if (!_unknownLogged)
+        {
+            Logger.LogInformation("未识别到社团问答场景，请手动进入社团答题入口。");
+            _unknownLogged = true;
+        }
 
-    private async Task HandleMapStateAsync(CancellationToken cancellationToken)
-    {
-        await TryClickNamedTemplateAsync("map_castle_symbol", cancellationToken: cancellationToken);
         await Task.Delay(1000, cancellationToken);
-        await TryClickNamedTemplateAsync("map_club_symbol", cancellationToken: cancellationToken);
-        await Task.Delay(1000, cancellationToken);
-        await TryClickNamedTemplateAsync("map_club_enter", cancellationToken: cancellationToken);
-        await Task.Delay(1000, cancellationToken);
-        await Context.SendEscapeAsync(cancellationToken);
-        await Task.Delay(2000, cancellationToken);
     }
 
     private async Task HandleClubSceneStateAsync(CancellationToken cancellationToken)
@@ -336,18 +313,10 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
         await Task.Delay(1000, cancellationToken);
         _roundIndex++;
         _quizOver = true;
+        ResetQuizState();
         await FindScoreAsync(cancellationToken);
         await Context.SendEscapeAsync(cancellationToken);
         await Task.Delay(1000, cancellationToken);
-    }
-
-    private void OnStateDetected(ClubQuizState newState)
-    {
-        CurrentState = newState;
-        if (newState != ClubQuizState.Unknown)
-        {
-            ResetUnknownBuffer();
-        }
     }
 
     private async Task AcquireAnswerAsync(CancellationToken cancellationToken)
@@ -632,28 +601,6 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
             ? engineType
             : OcrEngineType.PaddleOCR;
 
-    private Mat GetImage(string name) =>
-        _images.TryGetValue(name, out var image)
-            ? image
-            : throw new KeyNotFoundException($"Task image was not loaded: {name}");
-
-    private async Task<bool> TryClickNamedTemplateAsync(
-        string name,
-        double threshold = 0.9,
-        CancellationToken cancellationToken = default)
-    {
-        var token = cancellationToken == default ? TaskCancellationToken : cancellationToken;
-        var result = Find(GetImage(name), new TemplateSearchOptions { Threshold = threshold }, token);
-        if (result.FirstRegion is not { } region)
-        {
-            return false;
-        }
-
-        ShowMatchRegions(result);
-        await Context.ClickMatchCenterAsync(region, token);
-        return true;
-    }
-
     private static string FormatOcrOverlayText(string text)
     {
         var normalized = Regex.Replace(text ?? string.Empty, "\\s+", " ").Trim();
@@ -759,7 +706,7 @@ public sealed class AutoClubQuizTask : AutomationTaskBase<ClubQuizTaskOptions>
         string Index);
 }
 
-public sealed class AutoClubQuizTaskFactory : IAutomationTaskFactory
+internal sealed class AutoClubQuizTaskFactory : IAutomationTaskFactory
 {
     private readonly ILogger<AutoClubQuizTask> _logger;
     private readonly IOcrService _ocrService;

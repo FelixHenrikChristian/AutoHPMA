@@ -15,9 +15,17 @@ internal enum ForbiddenForestState
     Summary,
 }
 
-public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForestTaskOptions>
+internal sealed class AutoForbiddenForestTask :
+    StateMachineAutomationTaskBase<ForbiddenForestTaskOptions, ForbiddenForestState>
 {
     private const string ImageDirectory = "Assets/Tasks/ForbiddenForest/Image";
+    private const int LoopDelayMilliseconds = 1000;
+    private const int LeaderConfirmDelayMilliseconds = 1500;
+    private const int SummaryReadyDelayMilliseconds = 3000;
+    private const int SummaryThumbDelayMilliseconds = 1000;
+    private const int SummaryExitDelayMilliseconds = 1500;
+    private const int SummaryCooldownMilliseconds = 2000;
+
     private static readonly double[] StateIconScaleFactors = [1d, 0.98d, 1.02d, 0.95d, 1.05d];
     private static readonly double[] LargeStateScaleFactors = [1d, 0.98d, 1.02d];
     private static readonly TemplateSearchOptions StateIconSearchOptions = new()
@@ -30,18 +38,26 @@ public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForest
         Threshold = 0.88,
         ScaleFactors = LargeStateScaleFactors,
     };
+    private static readonly TemplateSearchOptions FightAutoSearchOptions = new()
+    {
+        UseAlphaMask = true,
+        Threshold = 0.8,
+    };
+    private static readonly TemplateSearchOptions SummaryThumbSearchOptions = new()
+    {
+        FindMultiple = true,
+    };
 
-    private readonly Dictionary<string, Mat> _images;
     private readonly IReadOnlyList<AutomationTaskStateRule<ForbiddenForestState>> _stateRules;
-    private int _stateValue = (int)ForbiddenForestState.Unknown;
     private int _round;
+    private bool _summaryHandled;
 
     public AutoForbiddenForestTask(
         ForbiddenForestTaskOptions options,
         ILogger<AutoForbiddenForestTask> logger)
-        : base(options, logger)
+        : base(options, logger, ForbiddenForestState.Unknown)
     {
-        _images = LoadImagesFromDirectory(ImageDirectory, ImreadModes.Unchanged);
+        LoadTaskImages(ImageDirectory, ImreadModes.Unchanged);
         _stateRules =
         [
             new([GetImage("ui_explore")], ForbiddenForestState.Teaming, "禁林-组队中", SearchOptions: StateIconSearchOptions),
@@ -57,167 +73,177 @@ public sealed class AutoForbiddenForestTask : AutomationTaskBase<ForbiddenForest
 
     public override string DisplayName => "禁林";
 
-    private ForbiddenForestState CurrentState
+    protected override ForbiddenForestState UnknownState => ForbiddenForestState.Unknown;
+
+    protected override string UnknownDisplayName => "禁林-未知状态";
+
+    protected override IReadOnlyList<AutomationTaskStateRule<ForbiddenForestState>> StateRules => _stateRules;
+
+    protected override Task InitializeStateMachineAsync(CancellationToken cancellationToken)
     {
-        get => (ForbiddenForestState)Volatile.Read(ref _stateValue);
-        set => Volatile.Write(ref _stateValue, (int)value);
+        _round = 0;
+        _summaryHandled = false;
+        return Task.CompletedTask;
     }
 
-    protected override async Task ExecuteAsync(
-        AutomationTaskContext context,
+    protected override bool ShouldContinue(CancellationToken cancellationToken) =>
+        !cancellationToken.IsCancellationRequested && _round < Options.Times;
+
+    protected override async Task HandleStateAsync(
+        ForbiddenForestState state,
         CancellationToken cancellationToken)
     {
-        CurrentState = ForbiddenForestState.Unknown;
-        _round = 0;
-
-        var monitorInterval = TimeSpan.FromMilliseconds(
-            Math.Max(context.RuntimeOptions?.StateMonitorInterval ?? 200, 50));
-        StartStateMonitor(
-            _stateRules,
-            OnStateDetected,
-            ForbiddenForestState.Unknown,
-            "禁林-未知状态",
-            monitorInterval);
-
-        while (!cancellationToken.IsCancellationRequested && _round < Options.Times)
-        {
-            await ExecuteLoopAsync(cancellationToken);
-        }
-
-        if (_round >= Options.Times)
-        {
-            AppNotificationHelper.Show("禁林任务完成", $"已完成 {_round} 轮禁林任务。");
-            Logger.LogInformation(
-                "[Cyan]禁林[/Cyan] 任务完成：共完成 [Gold]{Round}[/Gold]/[Gold]{Total}[/Gold] 轮。",
-                _round,
-                Options.Times);
-        }
-    }
-
-    private async Task ExecuteLoopAsync(CancellationToken cancellationToken)
-    {
-        switch (CurrentState)
+        switch (state)
         {
             case ForbiddenForestState.Unknown:
-                if (!IsUnknownBufferElapsed())
-                {
-                    await Task.Delay(1000, cancellationToken);
-                    return;
-                }
-
-                await Task.Delay(1000, cancellationToken);
+                await HandleUnknownStateAsync(cancellationToken);
                 break;
-
             case ForbiddenForestState.Teaming:
-                if (await TryClickNamedTemplateAsync("team_auto", cancellationToken: cancellationToken))
-                {
-                    Logger.LogDebug("点击禁林自动战斗按钮。");
-                }
-
-                await Task.Delay(1000, cancellationToken);
-
-                if (Options.IsLeader)
-                {
-                    if (await TryClickNamedTemplateAsync("team_start", cancellationToken: cancellationToken))
-                    {
-                        Logger.LogDebug("点击禁林开始按钮。");
-                    }
-
-                    await Task.Delay(1500, cancellationToken);
-
-                    if (await TryClickNamedTemplateAsync("team_confirm", cancellationToken: cancellationToken))
-                    {
-                        Logger.LogDebug("确认禁林队伍出发。");
-                    }
-                }
-                else
-                {
-                    if (await TryClickNamedTemplateAsync("team_ready", cancellationToken: cancellationToken))
-                    {
-                        Logger.LogDebug("点击禁林准备按钮。");
-                    }
-
-                    await Task.Delay(1000, cancellationToken);
-                }
-
+                await HandleTeamingStateAsync(cancellationToken);
                 break;
-
             case ForbiddenForestState.Loading:
-                await Task.Delay(1000, cancellationToken);
+                await DelayAsync(cancellationToken, LoopDelayMilliseconds);
                 break;
-
             case ForbiddenForestState.Fighting:
-                var fightResult = Find(
-                    GetImage("fight_auto"),
-                    new TemplateSearchOptions
-                    {
-                        UseAlphaMask = true,
-                        Threshold = 0.8,
-                    },
-                    cancellationToken);
-
-                if (fightResult.FirstRegion is { } fightRegion)
-                {
-                    ShowMatchRegions(fightResult);
-                    await Context.ClickMatchCenterAsync(fightRegion, cancellationToken);
-                }
-
-                await Task.Delay(1000, cancellationToken);
+                await HandleFightingStateAsync(cancellationToken);
                 break;
-
             case ForbiddenForestState.Summary:
-                Logger.LogDebug("检测到禁林结算页面。");
-                await Task.Delay(3000, cancellationToken);
-
-                var thumbResult = Find(
-                    GetImage("over_thumb"),
-                    new TemplateSearchOptions { FindMultiple = true },
-                    cancellationToken);
-
-                if (thumbResult.Success)
-                {
-                    foreach (var region in thumbResult.Regions)
-                    {
-                        Context.Overlay.AddTemporaryRegion(Context.ToOverlayRegion(region), 1000);
-                        await Context.ClickMatchCenterAsync(region, cancellationToken);
-                        await Task.Delay(1000, cancellationToken);
-                    }
-                }
-
-                await Task.Delay(1500, cancellationToken);
-                await Context.SendSpaceAsync(cancellationToken);
-                _round++;
-                Logger.LogInformation(
-                    "第 [Gold]{Round}[/Gold]/[Gold]{Total}[/Gold] 轮 [Cyan]禁林[/Cyan] 已完成。",
-                    _round,
-                    Options.Times);
-                await Task.Delay(2000, cancellationToken);
+                await HandleSummaryStateAsync(cancellationToken);
                 break;
         }
     }
 
-    private void OnStateDetected(ForbiddenForestState newState)
+    protected override void OnDetectedStateChanged(
+        ForbiddenForestState previousState,
+        ForbiddenForestState currentState)
     {
-        CurrentState = newState;
-        if (newState != ForbiddenForestState.Unknown)
+        base.OnDetectedStateChanged(previousState, currentState);
+        if (currentState != ForbiddenForestState.Summary)
         {
-            ResetUnknownBuffer();
+            _summaryHandled = false;
         }
     }
 
-    private Mat GetImage(string name) =>
-        _images.TryGetValue(name, out var image)
-            ? image
-            : throw new KeyNotFoundException($"Task image was not loaded: {name}");
+    protected override Task OnStateMachineCompletedAsync(CancellationToken cancellationToken)
+    {
+        if (_round < Options.Times)
+        {
+            return Task.CompletedTask;
+        }
 
-    private Task<bool> TryClickNamedTemplateAsync(
-        string name,
-        double threshold = 0.9,
-        CancellationToken cancellationToken = default) =>
-        TryClickTemplateAsync(GetImage(name), threshold, cancellationToken);
+        AppNotificationHelper.Show("禁林任务完成", $"已完成 {_round} 轮禁林任务。");
+        Logger.LogInformation(
+            "[Cyan]禁林[/Cyan] 任务完成：共完成 [Gold]{Round}[/Gold]/[Gold]{Total}[/Gold] 轮。",
+            _round,
+            Options.Times);
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleUnknownStateAsync(CancellationToken cancellationToken)
+    {
+        if (!IsUnknownBufferElapsed())
+        {
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+            return;
+        }
+
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+    }
+
+    private async Task HandleTeamingStateAsync(CancellationToken cancellationToken)
+    {
+        if (await TryClickNamedTemplateAsync("team_auto", cancellationToken: cancellationToken))
+        {
+            Logger.LogDebug("点击禁林自动战斗按钮。");
+        }
+
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+        if (Options.IsLeader)
+        {
+            await HandleLeaderTeamingAsync(cancellationToken);
+            return;
+        }
+
+        await HandleMemberTeamingAsync(cancellationToken);
+    }
+
+    private async Task HandleLeaderTeamingAsync(CancellationToken cancellationToken)
+    {
+        if (await TryClickNamedTemplateAsync("team_start", cancellationToken: cancellationToken))
+        {
+            Logger.LogDebug("点击禁林开始按钮。");
+        }
+
+        await DelayAsync(cancellationToken, LeaderConfirmDelayMilliseconds);
+        if (await TryClickNamedTemplateAsync("team_confirm", cancellationToken: cancellationToken))
+        {
+            Logger.LogDebug("确认禁林队伍出发。");
+        }
+    }
+
+    private async Task HandleMemberTeamingAsync(CancellationToken cancellationToken)
+    {
+        if (await TryClickNamedTemplateAsync("team_ready", cancellationToken: cancellationToken))
+        {
+            Logger.LogDebug("点击禁林准备按钮。");
+        }
+
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+    }
+
+    private async Task HandleFightingStateAsync(CancellationToken cancellationToken)
+    {
+        var fightResult = FindImage("fight_auto", FightAutoSearchOptions, cancellationToken);
+        if (fightResult.FirstRegion is { } fightRegion)
+        {
+            ShowMatchRegions(fightResult);
+            await Context.ClickMatchCenterAsync(fightRegion, cancellationToken);
+        }
+
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+    }
+
+    private async Task HandleSummaryStateAsync(CancellationToken cancellationToken)
+    {
+        if (_summaryHandled)
+        {
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+            return;
+        }
+
+        _summaryHandled = true;
+        Logger.LogDebug("检测到禁林结算页面。");
+        await DelayAsync(cancellationToken, SummaryReadyDelayMilliseconds);
+        await ClickAllSummaryThumbsAsync(cancellationToken);
+        await DelayAsync(cancellationToken, SummaryExitDelayMilliseconds);
+        await Context.SendSpaceAsync(cancellationToken);
+
+        _round++;
+        Logger.LogInformation(
+            "第 [Gold]{Round}[/Gold]/[Gold]{Total}[/Gold] 轮 [Cyan]禁林[/Cyan] 已完成。",
+            _round,
+            Options.Times);
+        await DelayAsync(cancellationToken, SummaryCooldownMilliseconds);
+    }
+
+    private async Task ClickAllSummaryThumbsAsync(CancellationToken cancellationToken)
+    {
+        var thumbResult = FindImage("over_thumb", SummaryThumbSearchOptions, cancellationToken);
+        if (!thumbResult.Success)
+        {
+            return;
+        }
+
+        foreach (var region in thumbResult.Regions)
+        {
+            Context.Overlay.AddTemporaryRegion(Context.ToOverlayRegion(region));
+            await Context.ClickMatchCenterAsync(region, cancellationToken);
+            await DelayAsync(cancellationToken, SummaryThumbDelayMilliseconds);
+        }
+    }
 }
 
-public sealed class AutoForbiddenForestTaskFactory : IAutomationTaskFactory
+internal sealed class AutoForbiddenForestTaskFactory : IAutomationTaskFactory
 {
     private readonly ILogger<AutoForbiddenForestTask> _logger;
 

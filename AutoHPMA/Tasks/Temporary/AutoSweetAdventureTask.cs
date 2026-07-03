@@ -13,40 +13,38 @@ internal enum SweetAdventureState
     Ending,
 }
 
-public sealed class AutoSweetAdventureTask : AutomationTaskBase<SweetAdventureTaskOptions>
+internal sealed class AutoSweetAdventureTask :
+    StateMachineAutomationTaskBase<SweetAdventureTaskOptions, SweetAdventureState>
 {
     private const string ImageDirectory = "Assets/Tasks/SweetAdventure/Image";
-    private const int MaxStep = 12;
+    private const int LoopDelayMilliseconds = 1000;
+    private const int TeamingStartDelayMilliseconds = 3000;
+    private const int EndingDelayMilliseconds = 2000;
+
     private static readonly double[] StateScaleFactors = [1d, 0.98d, 1.02d, 0.95d, 1.05d];
     private static readonly TemplateSearchOptions StateSearchOptions = new()
     {
         Threshold = 0.88,
         ScaleFactors = StateScaleFactors,
     };
-    private static readonly TemplateSearchOptions HighConfidenceSearchOptions = new()
-    {
-        Threshold = 0.96,
-    };
 
-    private readonly Dictionary<string, Mat> _images;
     private readonly IReadOnlyList<AutomationTaskStateRule<SweetAdventureState>> _stateRules;
-    private int _stateValue = (int)SweetAdventureState.Unknown;
-    private int _round;
-    private int _previousRound;
-    private int _step = 1;
+    private readonly SweetAdventureGameSession _gameSession;
+    private bool _endingHandled;
 
     public AutoSweetAdventureTask(
         SweetAdventureTaskOptions options,
         ILogger<AutoSweetAdventureTask> logger)
-        : base(options, logger)
+        : base(options, logger, SweetAdventureState.Unknown)
     {
-        _images = LoadImagesFromDirectory(ImageDirectory, ImreadModes.Unchanged);
+        LoadTaskImages(ImageDirectory, ImreadModes.Unchanged);
         _stateRules =
         [
             new([GetImage("ui_teaming")], SweetAdventureState.Teaming, "甜蜜冒险-组队中", SearchOptions: StateSearchOptions),
             new([GetImage("ui_gaming")], SweetAdventureState.Gaming, "甜蜜冒险-游戏中", SearchOptions: StateSearchOptions),
             new([GetImage("ui_endding")], SweetAdventureState.Ending, "甜蜜冒险-结算中", SearchOptions: StateSearchOptions),
         ];
+        _gameSession = new SweetAdventureGameSession(this);
 
         UnknownBufferMilliseconds = 5000;
     }
@@ -55,176 +53,195 @@ public sealed class AutoSweetAdventureTask : AutomationTaskBase<SweetAdventureTa
 
     public override string DisplayName => "甜蜜冒险";
 
-    private SweetAdventureState CurrentState
+    protected override SweetAdventureState UnknownState => SweetAdventureState.Unknown;
+
+    protected override string UnknownDisplayName => "甜蜜冒险-未知状态";
+
+    protected override IReadOnlyList<AutomationTaskStateRule<SweetAdventureState>> StateRules => _stateRules;
+
+    protected override Task InitializeStateMachineAsync(CancellationToken cancellationToken)
     {
-        get => (SweetAdventureState)Volatile.Read(ref _stateValue);
-        set => Volatile.Write(ref _stateValue, (int)value);
+        _gameSession.Reset();
+        _endingHandled = false;
+        return Task.CompletedTask;
     }
 
-    protected override async Task ExecuteAsync(
-        AutomationTaskContext context,
+    protected override async Task HandleStateAsync(
+        SweetAdventureState state,
         CancellationToken cancellationToken)
     {
-        CurrentState = SweetAdventureState.Unknown;
-        _round = 0;
-        _previousRound = 0;
-        _step = 1;
-
-        var monitorInterval = TimeSpan.FromMilliseconds(
-            Math.Max(context.RuntimeOptions?.StateMonitorInterval ?? 200, 50));
-        StartStateMonitor(
-            _stateRules,
-            OnStateDetected,
-            SweetAdventureState.Unknown,
-            "甜蜜冒险-未知状态",
-            monitorInterval);
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            await ExecuteLoopAsync(cancellationToken);
-        }
-    }
-
-    private async Task ExecuteLoopAsync(CancellationToken cancellationToken)
-    {
-        switch (CurrentState)
+        switch (state)
         {
             case SweetAdventureState.Unknown:
-                if (!IsUnknownBufferElapsed())
-                {
-                    await Task.Delay(1000, cancellationToken);
-                    return;
-                }
-
-                await Task.Delay(1000, cancellationToken);
+                await HandleUnknownStateAsync(cancellationToken);
                 break;
-
             case SweetAdventureState.Teaming:
-                if (await TryClickNamedTemplateAsync("teaming_start", cancellationToken: cancellationToken))
-                {
-                    Logger.LogInformation("[Cyan]甜蜜冒险[/Cyan] 已点击开始匹配。");
-                    await Task.Delay(3000, cancellationToken);
-                }
-
-                await Task.Delay(1000, cancellationToken);
+                await HandleTeamingStateAsync(cancellationToken);
                 break;
-
             case SweetAdventureState.Gaming:
-                _round = FindRound(cancellationToken);
-                if (_round > _previousRound)
-                {
-                    Logger.LogInformation("当前回合：[Gold]{Round}[/Gold]。", _round);
-                    _step = 1;
-                    _previousRound = _round;
-                }
-
-                if (_step < MaxStep)
-                {
-                    if (await TryClickStepTemplateAsync("gaming_forward", "前进", cancellationToken))
-                    {
-                        return;
-                    }
-
-                    if (await TryClickStepTemplateAsync("gaming_candy", "预测糖果", cancellationToken))
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    if (await TryClickStepTemplateAsync("gaming_return", "返回", cancellationToken))
-                    {
-                        return;
-                    }
-
-                    if (await TryClickStepTemplateAsync("gaming_monster", "预测怪物", cancellationToken))
-                    {
-                        return;
-                    }
-                }
-
-                await Task.Delay(1000, cancellationToken);
+                await _gameSession.PlayAsync(cancellationToken);
                 break;
-
             case SweetAdventureState.Ending:
-                ClearTaskStateRegions();
-                _round = 0;
-                _previousRound = 0;
-                _step = 1;
-                Logger.LogInformation("[Cyan]甜蜜冒险[/Cyan] 游戏结束，正在结算。");
-                await Context.SendSpaceAsync(cancellationToken);
-                await Task.Delay(2000, cancellationToken);
+                await HandleEndingStateAsync(cancellationToken);
                 break;
         }
     }
 
-    private void OnStateDetected(SweetAdventureState newState)
+    protected override void OnDetectedStateChanged(
+        SweetAdventureState previousState,
+        SweetAdventureState currentState)
     {
-        CurrentState = newState;
-        if (newState != SweetAdventureState.Unknown)
+        base.OnDetectedStateChanged(previousState, currentState);
+        if (currentState != SweetAdventureState.Ending)
         {
-            ResetUnknownBuffer();
+            _endingHandled = false;
         }
     }
 
-    private async Task<bool> TryClickStepTemplateAsync(
-        string imageName,
-        string actionName,
-        CancellationToken cancellationToken)
+    private async Task HandleUnknownStateAsync(CancellationToken cancellationToken)
     {
-        var result = Find(GetImage(imageName), HighConfidenceSearchOptions, cancellationToken);
-        if (result.FirstRegion is not { } region)
+        if (!IsUnknownBufferElapsed())
         {
-            return false;
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+            return;
         }
 
-        ShowMatchRegions(result);
-        await Context.ClickMatchCenterAsync(region, cancellationToken);
-        _step++;
-        Logger.LogInformation("第 [Gold]{Step}[/Gold] 步：{ActionName}。", _step, actionName);
-        await Task.Delay(1000, cancellationToken);
-        return true;
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
     }
 
-    private int FindRound(CancellationToken cancellationToken)
+    private async Task HandleTeamingStateAsync(CancellationToken cancellationToken)
     {
-        var roundTemplates = new[]
+        if (await TryClickNamedTemplateAsync("teaming_start", cancellationToken: cancellationToken))
         {
-            ("gaming_round1", 1),
-            ("gaming_round2", 2),
-            ("gaming_round3", 3),
-            ("gaming_round4", 4),
-            ("gaming_round5", 5),
+            Logger.LogInformation("[Cyan]甜蜜冒险[/Cyan] 已点击开始匹配。");
+            await DelayAsync(cancellationToken, TeamingStartDelayMilliseconds);
+        }
+
+        await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+    }
+
+    private async Task HandleEndingStateAsync(CancellationToken cancellationToken)
+    {
+        if (_endingHandled)
+        {
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+            return;
+        }
+
+        _endingHandled = true;
+        ClearTaskStateRegions();
+        _gameSession.Reset();
+        Logger.LogInformation("[Cyan]甜蜜冒险[/Cyan] 游戏结束，正在结算。");
+        await Context.SendSpaceAsync(cancellationToken);
+        await DelayAsync(cancellationToken, EndingDelayMilliseconds);
+    }
+
+    private sealed class SweetAdventureGameSession
+    {
+        private const int MaxStep = 12;
+        private static readonly TemplateSearchOptions StepSearchOptions = new()
+        {
+            Threshold = 0.96,
         };
 
-        foreach (var (imageName, round) in roundTemplates)
-        {
-            var result = Find(GetImage(imageName), cancellationToken: cancellationToken);
-            if (!result.Success)
-            {
-                continue;
-            }
+        private readonly AutoSweetAdventureTask _task;
+        private int _round;
+        private int _previousRound;
+        private int _step = 1;
 
-            SetTaskStateRegions(result.Regions);
-            return round;
+        public SweetAdventureGameSession(AutoSweetAdventureTask task)
+        {
+            _task = task;
         }
 
-        return -1;
+        public void Reset()
+        {
+            _round = 0;
+            _previousRound = 0;
+            _step = 1;
+        }
+
+        public async Task PlayAsync(CancellationToken cancellationToken)
+        {
+            UpdateRound(cancellationToken);
+            if (_step < MaxStep)
+            {
+                if (await TryClickStepAsync("gaming_forward", "前进", cancellationToken) ||
+                    await TryClickStepAsync("gaming_candy", "预测糖果", cancellationToken))
+                {
+                    return;
+                }
+            }
+            else if (await TryClickStepAsync("gaming_return", "返回", cancellationToken) ||
+                     await TryClickStepAsync("gaming_monster", "预测怪物", cancellationToken))
+            {
+                return;
+            }
+
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+        }
+
+        private void UpdateRound(CancellationToken cancellationToken)
+        {
+            _round = FindRound(cancellationToken);
+            if (_round <= _previousRound)
+            {
+                return;
+            }
+
+            _task.Logger.LogInformation("当前回合：[Gold]{Round}[/Gold]。", _round);
+            _step = 1;
+            _previousRound = _round;
+        }
+
+        private async Task<bool> TryClickStepAsync(
+            string imageName,
+            string actionName,
+            CancellationToken cancellationToken)
+        {
+            var result = _task.Find(_task.GetImage(imageName), StepSearchOptions, cancellationToken);
+            if (result.FirstRegion is not { } region)
+            {
+                return false;
+            }
+
+            _task.ShowMatchRegions(result);
+            await _task.Context.ClickMatchCenterAsync(region, cancellationToken);
+            _step++;
+            _task.Logger.LogInformation("第 [Gold]{Step}[/Gold] 步：{ActionName}。", _step, actionName);
+            await DelayAsync(cancellationToken, LoopDelayMilliseconds);
+            return true;
+        }
+
+        private int FindRound(CancellationToken cancellationToken)
+        {
+            var roundTemplates = new[]
+            {
+                ("gaming_round1", 1),
+                ("gaming_round2", 2),
+                ("gaming_round3", 3),
+                ("gaming_round4", 4),
+                ("gaming_round5", 5),
+            };
+
+            foreach (var (imageName, round) in roundTemplates)
+            {
+                var result = _task.Find(_task.GetImage(imageName), cancellationToken: cancellationToken);
+                if (!result.Success)
+                {
+                    continue;
+                }
+
+                _task.SetTaskStateRegions(result.Regions);
+                return round;
+            }
+
+            return -1;
+        }
     }
-
-    private Mat GetImage(string name) =>
-        _images.TryGetValue(name, out var image)
-            ? image
-            : throw new KeyNotFoundException($"Task image was not loaded: {name}");
-
-    private Task<bool> TryClickNamedTemplateAsync(
-        string name,
-        double threshold = 0.9,
-        CancellationToken cancellationToken = default) =>
-        TryClickTemplateAsync(GetImage(name), threshold, cancellationToken);
 }
 
-public sealed class AutoSweetAdventureTaskFactory : IAutomationTaskFactory
+internal sealed class AutoSweetAdventureTaskFactory : IAutomationTaskFactory
 {
     private readonly ILogger<AutoSweetAdventureTask> _logger;
 

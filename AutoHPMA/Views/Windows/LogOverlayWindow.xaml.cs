@@ -217,6 +217,14 @@ public sealed partial class LogOverlayWindow : WindowEx, INotifyPropertyChanged
         }
     }
 
+    private void OnMessageTextDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    {
+        if (sender is TextBlock textBlock && args.NewValue is LogEntry entry)
+        {
+            LogMessageFormatter.Apply(textBlock, entry.Message);
+        }
+    }
+
     private void OnMessageClipHostSizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (sender is not FrameworkElement element)

@@ -163,7 +163,8 @@
                                                 Canvas.Top="2"
                                                 FontSize="12"
                                                 Foreground="#E8E8E8"
-                                                Loaded="OnMessageTextLoaded" />
+                                                Loaded="OnMessageTextLoaded"
+                                                DataContextChanged="OnMessageTextDataContextChanged" />
                                         </Canvas>
                                     </Grid>
                                 </Grid>
