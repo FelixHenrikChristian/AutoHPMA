@@ -513,7 +513,7 @@ internal sealed class AutoClubQuizTask :
                 ocrText.Contains("上限", StringComparison.Ordinal))
             {
                 Logger.LogInformation("本周社团贡献已达上限。");
-                AppNotificationHelper.Show("答题结束", "本周社团贡献已达上限。");
+                AppNotificationHelper.ShowWithImage("答题结束", "本周社团贡献已满。", captureMat);
 
                 if (Options.StopWhenContributionFull)
                 {
@@ -532,7 +532,10 @@ internal sealed class AutoClubQuizTask :
         var weekTotal = Regex.Replace(match.Groups[2].Value, "\\s+", string.Empty);
         Logger.LogInformation("本次社团贡献：[Gold]+{AddScore}[/Gold]。", addScore);
         Logger.LogInformation("本周社团贡献：[Gold]{WeekTotal}[/Gold]。", weekTotal);
-        AppNotificationHelper.Show("答题结束", $"本次社团贡献：+{addScore}\n本周社团贡献：{weekTotal}");
+        AppNotificationHelper.ShowWithImage(
+            "答题结束",
+            $"本次社团贡献：+{addScore}。\n本周社团贡献：{weekTotal}。",
+            captureMat);
     }
 
     private bool FindTime20AndIndex(CancellationToken cancellationToken)

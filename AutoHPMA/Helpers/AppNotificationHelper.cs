@@ -1,7 +1,10 @@
 using System;
+using System.IO;
 
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
+using OpenCvSharp;
+using Serilog;
 
 namespace AutoHPMA.Helpers;
 
@@ -11,6 +14,7 @@ namespace AutoHPMA.Helpers;
 /// </summary>
 public static class AppNotificationHelper
 {
+    private const int NotificationImageRetentionDays = 7;
     private static bool _isRegistered;
 
     /// <summary>
@@ -75,6 +79,41 @@ public static class AppNotificationHelper
     /// <param name="heroImage">可选的大图，传入 <c>ms-appx:///</c> 或本地文件 URI。</param>
     public static void Show(string title, string message, Uri? heroImage = null)
     {
+        ShowCore(title, message, heroImage, inlineImage: null);
+    }
+
+    /// <summary>
+    /// 发送一条带内联截图的通知。
+    /// </summary>
+    public static void ShowWithImage(string title, string message, Mat image)
+    {
+        if (!IsEnabled)
+        {
+            return;
+        }
+
+        ArgumentNullException.ThrowIfNull(image);
+
+        try
+        {
+            if (image.Empty())
+            {
+                Show(title, message);
+                return;
+            }
+
+            var imagePath = SaveNotificationImage(image);
+            ShowCore(title, message, heroImage: null, inlineImage: new Uri(imagePath));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "保存通知截图失败，将发送纯文本通知。");
+            Show(title, message);
+        }
+    }
+
+    private static void ShowCore(string title, string message, Uri? heroImage, Uri? inlineImage)
+    {
         if (!IsEnabled)
         {
             return;
@@ -84,28 +123,86 @@ public static class AppNotificationHelper
         {
             var builder = new AppNotificationBuilder()
                 .AddText(title)
-                .AddText(message)
-                .SetAppLogoOverride(new Uri("ms-appx:///Assets/logo.png"), AppNotificationImageCrop.Circle);
+                .AddText(message);
 
-            if (heroImage != null)
+            if (ResolveLogoUri() is { } logoUri)
+            {
+                builder.SetAppLogoOverride(logoUri, AppNotificationImageCrop.Circle);
+            }
+
+            if (heroImage is not null)
             {
                 builder.SetHeroImage(heroImage);
             }
 
-            if (IsSoundEnabled)
+            if (inlineImage is not null)
             {
-                builder.SetAudioEvent(AppNotificationSoundEvent.Default);
-            }
-            else
-            {
-                builder.MuteAudio();
+                builder.SetInlineImage(inlineImage);
             }
 
+            ApplyAudioSettings(builder);
             AppNotificationManager.Default.Show(builder.BuildNotification());
         }
-        catch
+        catch (Exception ex)
         {
-            // 通知失败不应影响主流程。
+            Log.Warning(ex, "发送 Windows 通知失败。标题：{NotificationTitle}", title);
+        }
+    }
+
+    private static Uri? ResolveLogoUri()
+    {
+        if (RuntimeHelper.IsMSIX)
+        {
+            return new Uri("ms-appx:///Assets/logo.png");
+        }
+
+        var logoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png");
+        return File.Exists(logoPath) ? new Uri(logoPath) : null;
+    }
+
+    private static void ApplyAudioSettings(AppNotificationBuilder builder)
+    {
+        if (IsSoundEnabled)
+        {
+            builder.SetAudioEvent(AppNotificationSoundEvent.Default);
+        }
+        else
+        {
+            builder.MuteAudio();
+        }
+    }
+
+    private static string SaveNotificationImage(Mat image)
+    {
+        var imageDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AutoHPMA",
+            "cache",
+            "Notifications");
+        Directory.CreateDirectory(imageDirectory);
+        DeleteExpiredNotificationImages(imageDirectory);
+
+        var imagePath = Path.Combine(imageDirectory, $"notification_{Guid.NewGuid():N}.png");
+        image.SaveImage(imagePath);
+        return imagePath;
+    }
+
+    private static void DeleteExpiredNotificationImages(string imageDirectory)
+    {
+        var expireBefore = DateTime.UtcNow.AddDays(-NotificationImageRetentionDays);
+        foreach (var imagePath in Directory.EnumerateFiles(imageDirectory, "notification_*.png"))
+        {
+            try
+            {
+                if (File.GetLastWriteTimeUtc(imagePath) < expireBefore)
+                {
+                    File.Delete(imagePath);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Debug(ex, "清理过期通知截图失败：{ImagePath}", imagePath);
+            }
         }
     }
 }
