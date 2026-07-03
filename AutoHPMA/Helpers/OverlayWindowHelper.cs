@@ -189,7 +189,16 @@ internal static class OverlayWindowHelper
     }
 
     public static bool TryFitToWindow(WindowEx overlay, IntPtr targetHwnd, int offsetX = 0, int offsetY = 0)
+        => TryFitToWindow(overlay, targetHwnd, out _, offsetX, offsetY);
+
+    public static bool TryFitToWindow(
+        WindowEx overlay,
+        IntPtr targetHwnd,
+        out bool boundsChanged,
+        int offsetX = 0,
+        int offsetY = 0)
     {
+        boundsChanged = false;
         if (!TryGetWindowBounds(targetHwnd, out var bounds))
         {
             return false;
@@ -200,7 +209,8 @@ internal static class OverlayWindowHelper
             bounds.Top + offsetY,
             Math.Max(1, bounds.Width),
             Math.Max(1, bounds.Height));
-        if (ShouldApplyBounds(overlay, newBounds))
+        boundsChanged = ShouldApplyBounds(overlay, newBounds);
+        if (boundsChanged)
         {
             overlay.AppWindow.MoveAndResize(newBounds);
         }

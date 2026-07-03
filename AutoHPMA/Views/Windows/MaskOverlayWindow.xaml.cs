@@ -95,44 +95,66 @@ public sealed partial class MaskOverlayWindow : WindowEx
 
     public void SetStateIndicatorRegions(IReadOnlyList<OverlayRegion> regions)
     {
+        var changed = false;
         lock (_gate)
         {
-            _stateIndicatorRegions.Clear();
-            _stateIndicatorRegions.AddRange(regions.Select(region => new RegionData { Region = region }));
+            changed = ReplaceRegions(_stateIndicatorRegions, regions);
         }
 
-        Redraw();
+        if (changed)
+        {
+            Redraw();
+        }
     }
 
     public void ClearStateIndicatorRegions()
     {
+        var changed = false;
         lock (_gate)
         {
-            _stateIndicatorRegions.Clear();
+            if (_stateIndicatorRegions.Count > 0)
+            {
+                _stateIndicatorRegions.Clear();
+                changed = true;
+            }
         }
 
-        Redraw();
+        if (changed)
+        {
+            Redraw();
+        }
     }
 
     public void SetTaskStateRegions(IReadOnlyList<OverlayRegion> regions)
     {
+        var changed = false;
         lock (_gate)
         {
-            _taskStateRegions.Clear();
-            _taskStateRegions.AddRange(regions.Select(region => new RegionData { Region = region }));
+            changed = ReplaceRegions(_taskStateRegions, regions);
         }
 
-        Redraw();
+        if (changed)
+        {
+            Redraw();
+        }
     }
 
     public void ClearTaskStateRegions()
     {
+        var changed = false;
         lock (_gate)
         {
-            _taskStateRegions.Clear();
+            if (_taskStateRegions.Count > 0)
+            {
+                _taskStateRegions.Clear();
+                changed = true;
+            }
         }
 
-        Redraw();
+        if (changed)
+        {
+            Redraw();
+        }
     }
 
     public void ClearAll()
@@ -149,7 +171,8 @@ public sealed partial class MaskOverlayWindow : WindowEx
 
     public void RefreshPosition(IntPtr hWnd, int offsetX = 0, int offsetY = 0)
     {
-        if (OverlayWindowHelper.TryFitToWindow(this, hWnd, offsetX, offsetY))
+        if (OverlayWindowHelper.TryFitToWindow(this, hWnd, out var boundsChanged, offsetX, offsetY) &&
+            boundsChanged)
         {
             Redraw();
         }
@@ -179,22 +202,29 @@ public sealed partial class MaskOverlayWindow : WindowEx
         OverlayCanvas.Height = canvasHeight;
         OverlayCanvas.Children.Clear();
 
+        OverlayRegion[] stateIndicatorRegions;
+        OverlayRegion[] taskStateRegions;
+        OverlayRegion[] temporaryRegions;
         lock (_gate)
         {
-            foreach (var stateRegion in _stateIndicatorRegions)
-            {
-                DrawRegion(stateRegion.Region, StateIndicatorStyle, scale, canvasWidth, canvasHeight);
-            }
+            stateIndicatorRegions = _stateIndicatorRegions.Select(region => region.Region).ToArray();
+            taskStateRegions = _taskStateRegions.Select(region => region.Region).ToArray();
+            temporaryRegions = _temporaryRegions.Select(region => region.Region).ToArray();
+        }
 
-            foreach (var taskRegion in _taskStateRegions)
-            {
-                DrawRegion(taskRegion.Region, TaskStateStyle, scale, canvasWidth, canvasHeight);
-            }
+        foreach (var region in stateIndicatorRegions)
+        {
+            DrawRegion(region, StateIndicatorStyle, scale, canvasWidth, canvasHeight);
+        }
 
-            foreach (var tempRegion in _temporaryRegions)
-            {
-                DrawRegion(tempRegion.Region, TemporaryMatchStyle, scale, canvasWidth, canvasHeight);
-            }
+        foreach (var region in taskStateRegions)
+        {
+            DrawRegion(region, TaskStateStyle, scale, canvasWidth, canvasHeight);
+        }
+
+        foreach (var region in temporaryRegions)
+        {
+            DrawRegion(region, TemporaryMatchStyle, scale, canvasWidth, canvasHeight);
         }
     }
 
@@ -317,8 +347,12 @@ public sealed partial class MaskOverlayWindow : WindowEx
         double canvasWidth,
         double canvasHeight)
     {
+        const double labelWidth = 36;
+        const double labelHeight = 16;
         var statusElement = new Border
         {
+            MinWidth = labelWidth,
+            Height = labelHeight,
             Padding = new Thickness(3, 0, 3, 0),
             Background = new SolidColorBrush(Color.FromArgb(0xD8, 0, 0, 0)),
             BorderBrush = foregroundBrush,
@@ -334,18 +368,28 @@ public sealed partial class MaskOverlayWindow : WindowEx
             },
         };
 
-        statusElement.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
-        var desiredWidth = statusElement.DesiredSize.Width;
-        var desiredHeight = statusElement.DesiredSize.Height;
-        var labelLeft = Math.Max(0, Math.Min(x, Math.Max(0, canvasWidth - desiredWidth - 2)));
+        var labelLeft = Math.Max(0, Math.Min(x, Math.Max(0, canvasWidth - labelWidth - 2)));
         var bottomOutsideTop = y + height + 2;
-        var labelTop = bottomOutsideTop <= canvasHeight - desiredHeight - 2
+        var labelTop = bottomOutsideTop <= canvasHeight - labelHeight - 2
             ? bottomOutsideTop
-            : Math.Max(0, y - desiredHeight - 2);
+            : Math.Max(0, y - labelHeight - 2);
 
         Canvas.SetLeft(statusElement, labelLeft);
-        Canvas.SetTop(statusElement, Math.Max(0, Math.Min(labelTop, Math.Max(0, canvasHeight - desiredHeight - 2))));
+        Canvas.SetTop(statusElement, Math.Max(0, Math.Min(labelTop, Math.Max(0, canvasHeight - labelHeight - 2))));
         OverlayCanvas.Children.Add(statusElement);
+    }
+
+    private static bool ReplaceRegions(List<RegionData> target, IReadOnlyList<OverlayRegion> regions)
+    {
+        if (target.Count == regions.Count &&
+            target.Select(item => item.Region).SequenceEqual(regions))
+        {
+            return false;
+        }
+
+        target.Clear();
+        target.AddRange(regions.Select(region => new RegionData { Region = region }));
+        return true;
     }
 
     private void AddInlineStatusText(

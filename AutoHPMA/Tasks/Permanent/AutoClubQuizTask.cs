@@ -49,6 +49,7 @@ internal sealed class AutoClubQuizTask :
     private bool _questionLocated;
     private bool _quizOver = true;
     private bool _unknownLogged;
+    private bool _victoryHandled;
     private bool _shouldStop;
     private int _roundIndex = 1;
 
@@ -90,6 +91,7 @@ internal sealed class AutoClubQuizTask :
     {
         ResetQuizState();
         _unknownLogged = false;
+        _victoryHandled = false;
         _shouldStop = false;
         _roundIndex = 1;
         return Task.CompletedTask;
@@ -141,6 +143,11 @@ internal sealed class AutoClubQuizTask :
         if (currentState != ClubQuizState.Unknown)
         {
             _unknownLogged = false;
+        }
+
+        if (currentState != ClubQuizState.Victory)
+        {
+            _victoryHandled = false;
         }
     }
 
@@ -310,6 +317,13 @@ internal sealed class AutoClubQuizTask :
 
     private async Task HandleVictoryStateAsync(CancellationToken cancellationToken)
     {
+        if (_victoryHandled)
+        {
+            await Task.Delay(1000, cancellationToken);
+            return;
+        }
+
+        _victoryHandled = true;
         await Task.Delay(1000, cancellationToken);
         _roundIndex++;
         _quizOver = true;
