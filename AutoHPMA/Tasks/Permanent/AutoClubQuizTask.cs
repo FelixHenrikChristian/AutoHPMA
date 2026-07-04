@@ -40,18 +40,14 @@ internal sealed class AutoClubQuizTask :
     private readonly IReadOnlyList<AutomationTaskStateRule<ClubQuizState>> _stateRules;
     private readonly IOcrService _ocrService;
     private readonly ClubQuizQuestionBank _questionBank;
-    private readonly Dictionary<char, Rect> _optionRects = [];
+    private readonly ClubQuizSession _quizSession;
 
     private GatherRefreshMode _gatherRefreshMode = GatherRefreshMode.Badge;
-    private Rect _questionRect;
-    private Rect _indexRect;
-    private bool _optionLocated;
-    private bool _questionLocated;
-    private bool _quizOver = true;
+    private bool _sessionAnnouncementPending = true;
     private bool _unknownLogged;
     private bool _victoryHandled;
     private bool _shouldStop;
-    private int _roundIndex = 1;
+    private int _sessionIndex = 1;
 
     public AutoClubQuizTask(
         ClubQuizTaskOptions options,
@@ -62,6 +58,7 @@ internal sealed class AutoClubQuizTask :
         _ocrService = ocrService;
         LoadTaskImages(ImageDirectory, ImreadModes.Unchanged);
         _questionBank = ClubQuizQuestionBank.Load(Path.Combine(AppContext.BaseDirectory, QuestionBankPath));
+        _quizSession = new ClubQuizSession(this);
         _stateRules =
         [
             new([GetImage("ui_club_symbol")], ClubQuizState.ClubScene, "社团问答-社团场景", SearchOptions: StateSearchOptions),
@@ -89,11 +86,11 @@ internal sealed class AutoClubQuizTask :
 
     protected override Task InitializeStateMachineAsync(CancellationToken cancellationToken)
     {
-        ResetQuizState();
+        ResetQuizSession();
         _unknownLogged = false;
         _victoryHandled = false;
         _shouldStop = false;
-        _roundIndex = 1;
+        _sessionIndex = 1;
         return Task.CompletedTask;
     }
 
@@ -263,48 +260,13 @@ internal sealed class AutoClubQuizTask :
 
     private async Task HandleQuizStateAsync(CancellationToken cancellationToken)
     {
-        if (_quizOver)
+        if (_sessionAnnouncementPending)
         {
-            Logger.LogInformation("第 [Gold]{RoundIndex}[/Gold] 轮 [Cyan]社团问答[/Cyan] 开始。", _roundIndex);
-            _quizOver = false;
+            Logger.LogInformation("第 [Gold]{SessionIndex}[/Gold] 轮 [Cyan]社团问答[/Cyan] 开始。", _sessionIndex);
+            _sessionAnnouncementPending = false;
         }
 
-        if (!_optionLocated && !LocateOptions(cancellationToken))
-        {
-            Logger.LogWarning("未定位到社团问答选项区域，将重试。");
-            await Task.Delay(1000, cancellationToken);
-            return;
-        }
-
-        if (!_questionLocated && !LocateQuestion(cancellationToken))
-        {
-            Logger.LogWarning("未定位到社团问答问题区域，将重试。");
-            await Task.Delay(1000, cancellationToken);
-            return;
-        }
-
-        if (!FindTime20AndIndex(cancellationToken))
-        {
-            await Task.Delay(DetectGapMilliseconds, cancellationToken);
-            return;
-        }
-
-        try
-        {
-            await Task.Delay(500, cancellationToken);
-            LocateQuestion(cancellationToken);
-            await Task.Delay(100, cancellationToken);
-            await AcquireAnswerAsync(cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "社团问答识别或点击答案失败，将重试。");
-            await Task.Delay(1000, cancellationToken);
-        }
+        await _quizSession.TickAsync(cancellationToken);
     }
 
     private async Task HandleOverStateAsync(CancellationToken cancellationToken)
@@ -325,159 +287,11 @@ internal sealed class AutoClubQuizTask :
 
         _victoryHandled = true;
         await Task.Delay(1000, cancellationToken);
-        _roundIndex++;
-        _quizOver = true;
-        ResetQuizState();
-        await FindScoreAsync(cancellationToken);
+        _sessionIndex++;
+        ResetQuizSession();
+        await ReadContributionAsync(cancellationToken);
         await Context.SendEscapeAsync(cancellationToken);
         await Task.Delay(1000, cancellationToken);
-    }
-
-    private async Task AcquireAnswerAsync(CancellationToken cancellationToken)
-    {
-        var text = await RecognizeQuestionTextAsync(cancellationToken);
-        UpdateRecognizedTextRegions(text);
-        var match = _questionBank.FindBestMatch(text.Question);
-        var bestOption = ClubQuizQuestionBank.FindBestOption(
-            match.Answer,
-            new Dictionary<char, string?>
-            {
-                ['A'] = text.OptionA,
-                ['B'] = text.OptionB,
-                ['C'] = text.OptionC,
-                ['D'] = text.OptionD,
-            });
-
-        Logger.LogDebug("问题 OCR：{Question}", text.Question);
-        Logger.LogDebug("选项 OCR：A={OptionA} B={OptionB} C={OptionC} D={OptionD}", text.OptionA, text.OptionB, text.OptionC, text.OptionD);
-        Logger.LogDebug("题库匹配：{MatchedQuestion}，相似度 {Score:P1}，答案 {Answer}", match.Question, match.Score, match.Answer);
-
-        if (Options.AnswerDelay > 0)
-        {
-            await Task.Delay(Options.AnswerDelay, cancellationToken);
-        }
-
-        var progress = NormalizeProgress(text.Index);
-        Logger.LogInformation(
-            "答题进度：[Gold]{Progress}[/Gold]，选择：[Gold]{Option}[/Gold]。",
-            progress,
-            bestOption);
-        await ClickOptionAsync(bestOption, cancellationToken);
-    }
-
-    private bool LocateOptions(CancellationToken cancellationToken)
-    {
-        using var captureMat = Context.CaptureBgrMat(cancellationToken);
-        using var optionMask = ToGrayMask(GetImage("quiz_option_mask"));
-        var optionTemplates = new[]
-        {
-            ('A', GetImage("quiz_option_a")),
-            ('B', GetImage("quiz_option_b")),
-            ('C', GetImage("quiz_option_c")),
-            ('D', GetImage("quiz_option_d")),
-        };
-
-        _optionRects.Clear();
-        foreach (var (key, template) in optionTemplates)
-        {
-            var result = Context.TemplateMatching.Search(
-                captureMat,
-                template,
-                new TemplateSearchOptions
-                {
-                    Threshold = 0.85,
-                    Mask = optionMask,
-                });
-
-            if (result.FirstRegion is not { } region)
-            {
-                _optionRects.Clear();
-                return false;
-            }
-
-            _optionRects[key] = new Rect(region.X, region.Y, region.Width, region.Height);
-        }
-
-        _optionLocated = true;
-        UpdateLocatedRegions();
-        return true;
-    }
-
-    private bool LocateQuestion(CancellationToken cancellationToken)
-    {
-        using var captureMat = Context.CaptureBgrMat(cancellationToken);
-        using var binary = Binarize(captureMat, 200);
-        var rect = DetectApproxRectangle(binary, 1000, 5);
-        if (rect.Width <= 0 || rect.Height <= 0)
-        {
-            return false;
-        }
-
-        _questionRect = rect;
-        _questionLocated = true;
-        UpdateLocatedRegions();
-        return true;
-    }
-
-    private async Task<QuizRecognizedText> RecognizeQuestionTextAsync(CancellationToken cancellationToken)
-    {
-        var engineType = ResolveOcrEngineType();
-        using var captureMat = Context.CaptureBgrMat(cancellationToken);
-        using var question = Crop(captureMat, _questionRect);
-        using var optionA = Crop(captureMat, _optionRects['A']);
-        using var optionB = Crop(captureMat, _optionRects['B']);
-        using var optionC = Crop(captureMat, _optionRects['C']);
-        using var optionD = Crop(captureMat, _optionRects['D']);
-        using var index = Crop(captureMat, _indexRect);
-
-        return new QuizRecognizedText(
-            await RecognizeAsync(question, engineType, cancellationToken),
-            await RecognizeAsync(optionA, engineType, cancellationToken),
-            await RecognizeAsync(optionB, engineType, cancellationToken),
-            await RecognizeAsync(optionC, engineType, cancellationToken),
-            await RecognizeAsync(optionD, engineType, cancellationToken),
-            await RecognizeAsync(index, engineType, cancellationToken));
-    }
-
-    private void UpdateRecognizedTextRegions(QuizRecognizedText text)
-    {
-        var regions = new List<OverlayRegion>();
-        if (_questionLocated)
-        {
-            AddOcrOverlayRegion(regions, _questionRect, text.Question);
-        }
-
-        foreach (var (option, rect) in _optionRects.OrderBy(pair => pair.Key))
-        {
-            AddOcrOverlayRegion(regions, rect, option switch
-            {
-                'A' => text.OptionA,
-                'B' => text.OptionB,
-                'C' => text.OptionC,
-                'D' => text.OptionD,
-                _ => string.Empty,
-            });
-        }
-
-        if (_indexRect.Width > 0 && _indexRect.Height > 0)
-        {
-            AddOcrOverlayRegion(regions, _indexRect, text.Index);
-        }
-
-        if (regions.Count > 0)
-        {
-            Context.Overlay.SetTaskStateRegions(regions);
-        }
-    }
-
-    private void AddOcrOverlayRegion(List<OverlayRegion> regions, Rect rect, string text)
-    {
-        regions.Add(Context.ToOverlayRegion(
-            ToTemplateRegion(rect),
-            null,
-            FormatOcrOverlayText(text),
-            OverlayRegionStatusKind.Detail,
-            OverlayRegionKind.Ocr));
     }
 
     private async Task<string> RecognizeAsync(
@@ -485,21 +299,6 @@ internal sealed class AutoClubQuizTask :
         OcrEngineType engineType,
         CancellationToken cancellationToken) =>
         (await _ocrService.RecognizeAsync(mat, engineType, cancellationToken)).Trim();
-
-    private async Task ClickOptionAsync(char option, CancellationToken cancellationToken)
-    {
-        if (!_optionRects.TryGetValue(option, out var targetRect) &&
-            !_optionRects.TryGetValue('A', out targetRect))
-        {
-            Logger.LogWarning("未找到选项 {Option} 的点击区域。", option);
-            return;
-        }
-
-        var optionMask = GetImage("quiz_option_mask");
-        var centerX = targetRect.X + optionMask.Width / 4;
-        var centerY = targetRect.Y + optionMask.Height / 2;
-        await Context.ClickCanonicalAsync(centerX, centerY, cancellationToken);
-    }
 
     private async Task CloseDialogsAsync(CancellationToken cancellationToken)
     {
@@ -514,7 +313,7 @@ internal sealed class AutoClubQuizTask :
         }
     }
 
-    private async Task FindScoreAsync(CancellationToken cancellationToken)
+    private async Task ReadContributionAsync(CancellationToken cancellationToken)
     {
         var engineType = ResolveOcrEngineType();
         using var captureMat = Context.CaptureBgrMat(cancellationToken);
@@ -552,65 +351,11 @@ internal sealed class AutoClubQuizTask :
             captureMat);
     }
 
-    private bool FindTime20AndIndex(CancellationToken cancellationToken)
+    private void ResetQuizSession()
     {
-        var result = Find(GetImage("quiz_time20"), cancellationToken: cancellationToken);
-        if (result.FirstRegion is not { } region)
-        {
-            return false;
-        }
-
-        var time20 = GetImage("quiz_time20");
-        _indexRect = new Rect(region.X, region.Y + time20.Height, time20.Width, time20.Height);
-        UpdateLocatedRegions(result.Regions);
-        return true;
-    }
-
-    private void ResetQuizState()
-    {
-        _optionRects.Clear();
-        _optionLocated = false;
-        _questionLocated = false;
-        _questionRect = default;
-        _indexRect = default;
-        _quizOver = true;
+        _quizSession.Reset();
+        _sessionAnnouncementPending = true;
         _gatherRefreshMode = GatherRefreshMode.Badge;
-        ClearTaskStateRegions();
-    }
-
-    private void UpdateLocatedRegions(IEnumerable<TemplateMatchRegion>? extraRegions = null)
-    {
-        var regions = new List<OverlayRegion>();
-        foreach (var (option, rect) in _optionRects.OrderBy(pair => pair.Key))
-        {
-            regions.Add(Context.ToOverlayRegion(
-                ToTemplateRegion(rect),
-                kind: OverlayRegionKind.Ocr));
-        }
-
-        if (_questionLocated)
-        {
-            regions.Add(Context.ToOverlayRegion(
-                ToTemplateRegion(_questionRect),
-                kind: OverlayRegionKind.Ocr));
-        }
-
-        if (_indexRect.Width > 0 && _indexRect.Height > 0)
-        {
-            regions.Add(Context.ToOverlayRegion(
-                ToTemplateRegion(_indexRect),
-                kind: OverlayRegionKind.Ocr));
-        }
-
-        if (extraRegions is not null)
-        {
-            regions.AddRange(Context.ToOverlayRegions(extraRegions));
-        }
-
-        if (regions.Count > 0)
-        {
-            Context.Overlay.SetTaskStateRegions(regions);
-        }
     }
 
     private OcrEngineType ResolveOcrEngineType() =>
@@ -708,19 +453,285 @@ internal sealed class AutoClubQuizTask :
         return bestRect;
     }
 
+    private sealed class ClubQuizSession
+    {
+        private static readonly Rect ProgressRegion = new(600, 112, 80, 40);
+
+        private readonly AutoClubQuizTask _task;
+        private readonly Dictionary<char, Rect> _optionRegions = [];
+
+        private Rect _questionRegion;
+        private bool _hasAnsweredSinceJoining;
+        private bool _optionsLocated;
+        private bool _questionLocated;
+
+        public ClubQuizSession(AutoClubQuizTask task)
+        {
+            _task = task;
+        }
+
+        public void Reset()
+        {
+            _optionRegions.Clear();
+            _questionRegion = default;
+            _hasAnsweredSinceJoining = false;
+            _optionsLocated = false;
+            _questionLocated = false;
+            _task.ClearTaskStateRegions();
+        }
+
+        public async Task TickAsync(CancellationToken cancellationToken)
+        {
+            if (!_optionsLocated && !TryLocateOptions(cancellationToken))
+            {
+                _task.Logger.LogWarning("未定位到社团问答选项区域，将重试。");
+                await Task.Delay(1000, cancellationToken);
+                return;
+            }
+
+            if (!_questionLocated && !TryRefreshQuestionRegion(cancellationToken))
+            {
+                _task.Logger.LogWarning("未定位到社团问答问题区域，将重试。");
+                await Task.Delay(1000, cancellationToken);
+                return;
+            }
+
+            var roundStart = FindRoundStart(cancellationToken);
+            var shouldAnswer = roundStart.Success || !_hasAnsweredSinceJoining;
+            if (!shouldAnswer)
+            {
+                await Task.Delay(DetectGapMilliseconds, cancellationToken);
+                return;
+            }
+
+            if (roundStart.Success)
+            {
+                _task.ShowMatchRegions(roundStart);
+            }
+
+            try
+            {
+                await Task.Delay(500, cancellationToken);
+                TryRefreshQuestionRegion(cancellationToken);
+                await Task.Delay(100, cancellationToken);
+                await AnswerCurrentQuestionAsync(cancellationToken);
+                _hasAnsweredSinceJoining = true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _task.Logger.LogWarning(ex, "社团问答识别或点击答案失败，将重试。");
+                await Task.Delay(1000, cancellationToken);
+            }
+        }
+
+        private async Task AnswerCurrentQuestionAsync(CancellationToken cancellationToken)
+        {
+            var text = await ReadCurrentQuestionAsync(cancellationToken);
+            ShowRecognizedRegions(text);
+            var match = _task._questionBank.FindBestMatch(text.Question);
+            var bestOption = ClubQuizQuestionBank.FindBestOption(
+                match.Answer,
+                new Dictionary<char, string?>
+                {
+                    ['A'] = text.OptionA,
+                    ['B'] = text.OptionB,
+                    ['C'] = text.OptionC,
+                    ['D'] = text.OptionD,
+                });
+
+            _task.Logger.LogDebug("问题 OCR：{Question}", text.Question);
+            _task.Logger.LogDebug(
+                "选项 OCR：A={OptionA} B={OptionB} C={OptionC} D={OptionD}",
+                text.OptionA,
+                text.OptionB,
+                text.OptionC,
+                text.OptionD);
+            _task.Logger.LogDebug(
+                "题库匹配：{MatchedQuestion}，相似度 {Score:P1}，答案 {Answer}",
+                match.Question,
+                match.Score,
+                match.Answer);
+
+            if (_task.Options.AnswerDelay > 0)
+            {
+                await Task.Delay(_task.Options.AnswerDelay, cancellationToken);
+            }
+
+            _task.Logger.LogInformation(
+                "答题进度：[Gold]{Progress}[/Gold]，选择：[Gold]{Option}[/Gold]。",
+                NormalizeProgress(text.Progress),
+                bestOption);
+            await ClickOptionAsync(bestOption, cancellationToken);
+        }
+
+        private TemplateSearchResult FindRoundStart(CancellationToken cancellationToken) =>
+            _task.Find(_task.GetImage("quiz_time20"), cancellationToken: cancellationToken);
+
+        private bool TryLocateOptions(CancellationToken cancellationToken)
+        {
+            using var captureMat = _task.Context.CaptureBgrMat(cancellationToken);
+            using var optionMask = ToGrayMask(_task.GetImage("quiz_option_mask"));
+            var optionTemplates = new[]
+            {
+                ('A', _task.GetImage("quiz_option_a")),
+                ('B', _task.GetImage("quiz_option_b")),
+                ('C', _task.GetImage("quiz_option_c")),
+                ('D', _task.GetImage("quiz_option_d")),
+            };
+            var locatedRegions = new Dictionary<char, Rect>();
+
+            foreach (var (key, template) in optionTemplates)
+            {
+                var result = _task.Context.TemplateMatching.Search(
+                    captureMat,
+                    template,
+                    new TemplateSearchOptions
+                    {
+                        Threshold = 0.85,
+                        Mask = optionMask,
+                    });
+
+                if (result.FirstRegion is not { } region)
+                {
+                    return false;
+                }
+
+                locatedRegions[key] = new Rect(region.X, region.Y, region.Width, region.Height);
+            }
+
+            _optionRegions.Clear();
+            foreach (var (option, region) in locatedRegions)
+            {
+                _optionRegions[option] = region;
+            }
+
+            _optionsLocated = true;
+            ShowLocatedRegions();
+            return true;
+        }
+
+        private bool TryRefreshQuestionRegion(CancellationToken cancellationToken)
+        {
+            using var captureMat = _task.Context.CaptureBgrMat(cancellationToken);
+            using var binary = Binarize(captureMat, 200);
+            var region = DetectApproxRectangle(binary, 1000, 5);
+            if (region.Width <= 0 || region.Height <= 0)
+            {
+                return false;
+            }
+
+            _questionRegion = region;
+            _questionLocated = true;
+            ShowLocatedRegions();
+            return true;
+        }
+
+        private async Task<ClubQuizRecognizedText> ReadCurrentQuestionAsync(
+            CancellationToken cancellationToken)
+        {
+            var engineType = _task.ResolveOcrEngineType();
+            using var captureMat = _task.Context.CaptureBgrMat(cancellationToken);
+            using var question = Crop(captureMat, _questionRegion);
+            using var optionA = Crop(captureMat, _optionRegions['A']);
+            using var optionB = Crop(captureMat, _optionRegions['B']);
+            using var optionC = Crop(captureMat, _optionRegions['C']);
+            using var optionD = Crop(captureMat, _optionRegions['D']);
+            using var progress = Crop(captureMat, ProgressRegion);
+
+            return new ClubQuizRecognizedText(
+                await _task.RecognizeAsync(question, engineType, cancellationToken),
+                await _task.RecognizeAsync(optionA, engineType, cancellationToken),
+                await _task.RecognizeAsync(optionB, engineType, cancellationToken),
+                await _task.RecognizeAsync(optionC, engineType, cancellationToken),
+                await _task.RecognizeAsync(optionD, engineType, cancellationToken),
+                await _task.RecognizeAsync(progress, engineType, cancellationToken));
+        }
+
+        private async Task ClickOptionAsync(char option, CancellationToken cancellationToken)
+        {
+            if (!_optionRegions.TryGetValue(option, out var targetRegion) &&
+                !_optionRegions.TryGetValue('A', out targetRegion))
+            {
+                _task.Logger.LogWarning("未找到选项 {Option} 的点击区域。", option);
+                return;
+            }
+
+            var optionMask = _task.GetImage("quiz_option_mask");
+            var centerX = targetRegion.X + optionMask.Width / 4;
+            var centerY = targetRegion.Y + optionMask.Height / 2;
+            await _task.Context.ClickCanonicalAsync(centerX, centerY, cancellationToken);
+        }
+
+        private void ShowLocatedRegions()
+        {
+            var regions = _optionRegions
+                .OrderBy(pair => pair.Key)
+                .Select(pair => _task.Context.ToOverlayRegion(
+                    ToTemplateRegion(pair.Value),
+                    kind: OverlayRegionKind.Ocr))
+                .ToList();
+
+            if (_questionLocated)
+            {
+                regions.Add(_task.Context.ToOverlayRegion(
+                    ToTemplateRegion(_questionRegion),
+                    kind: OverlayRegionKind.Ocr));
+            }
+
+            if (regions.Count > 0)
+            {
+                _task.Context.Overlay.SetTaskStateRegions(regions);
+            }
+        }
+
+        private void ShowRecognizedRegions(ClubQuizRecognizedText text)
+        {
+            var regions = new List<OverlayRegion>();
+            AddOcrRegion(regions, _questionRegion, text.Question);
+            foreach (var (option, region) in _optionRegions.OrderBy(pair => pair.Key))
+            {
+                AddOcrRegion(regions, region, option switch
+                {
+                    'A' => text.OptionA,
+                    'B' => text.OptionB,
+                    'C' => text.OptionC,
+                    'D' => text.OptionD,
+                    _ => string.Empty,
+                });
+            }
+
+            AddOcrRegion(regions, ProgressRegion, text.Progress);
+            _task.Context.Overlay.SetTaskStateRegions(regions);
+        }
+
+        private void AddOcrRegion(List<OverlayRegion> regions, Rect region, string text)
+        {
+            regions.Add(_task.Context.ToOverlayRegion(
+                ToTemplateRegion(region),
+                null,
+                FormatOcrOverlayText(text),
+                OverlayRegionStatusKind.Detail,
+                OverlayRegionKind.Ocr));
+        }
+    }
+
     private enum GatherRefreshMode
     {
         ChatBox,
         Badge,
     }
 
-    private sealed record QuizRecognizedText(
+    private sealed record ClubQuizRecognizedText(
         string Question,
         string OptionA,
         string OptionB,
         string OptionC,
         string OptionD,
-        string Index);
+        string Progress);
 }
 
 internal sealed class AutoClubQuizTaskFactory : IAutomationTaskFactory
