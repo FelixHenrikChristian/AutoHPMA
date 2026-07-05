@@ -40,6 +40,7 @@ internal sealed class AutoClubQuizTask :
     private readonly IReadOnlyList<AutomationTaskStateRule<ClubQuizState>> _stateRules;
     private readonly IOcrService _ocrService;
     private readonly ClubQuizQuestionBank _questionBank;
+    private readonly ClubQuizChatNavigator _chatNavigator;
     private readonly ClubQuizSession _quizSession;
 
     private GatherRefreshMode _gatherRefreshMode = GatherRefreshMode.Badge;
@@ -58,6 +59,7 @@ internal sealed class AutoClubQuizTask :
         _ocrService = ocrService;
         LoadTaskImages(ImageDirectory, ImreadModes.Unchanged);
         _questionBank = ClubQuizQuestionBank.Load(Path.Combine(AppContext.BaseDirectory, QuestionBankPath));
+        _chatNavigator = new ClubQuizChatNavigator(this);
         _quizSession = new ClubQuizSession(this);
         _stateRules =
         [
@@ -185,52 +187,24 @@ internal sealed class AutoClubQuizTask :
 
     private async Task HandleChatFrameStateAsync(CancellationToken cancellationToken)
     {
-        if (await TryClickNamedTemplateAsync("chat_club", 0.88, cancellationToken))
-        {
-            await Task.Delay(2000, cancellationToken);
-        }
+        var enteredQuiz = await _chatNavigator.TryEnterOwnClubQuizAsync(cancellationToken);
 
-        if (await TryClickNamedTemplateAsync("chat_club_quiz", 0.98, cancellationToken))
+        if (enteredQuiz)
         {
-            await Task.Delay(2000, cancellationToken);
+            Logger.LogDebug("已通过社团聊天找到答题入口，不再查找学院互助。");
         }
-
-        if (Options.JoinOthers)
+        else if (Options.JoinOthers)
         {
-            await TryJoinOthersQuizAsync(cancellationToken);
+            await _chatNavigator.TryEnterCollegeHelpQuizAsync(cancellationToken);
+        }
+        else
+        {
+            Logger.LogDebug("未在社团聊天找到答题入口，且未开启加入其他社团答题。");
         }
 
         await Context.SendEscapeAsync(cancellationToken);
-        await Task.Delay(1500, cancellationToken);
-    }
-
-    private async Task TryJoinOthersQuizAsync(CancellationToken cancellationToken)
-    {
-        var enteredCollegeChannel =
-            await TryClickNamedTemplateAsync("chat_college_help", 0.88, cancellationToken) ||
-            await TryClickNamedTemplateAsync("chat_college", 0.88, cancellationToken);
-        if (!enteredCollegeChannel)
-        {
-            return;
-        }
-
-        await Task.Delay(1500, cancellationToken);
-        if (await TryClickNamedTemplateAsync("chat_college_help", cancellationToken: cancellationToken))
-        {
-            await Task.Delay(1500, cancellationToken);
-        }
-
-        if (!await TryClickNamedTemplateAsync("chat_club_quiz", 0.98, cancellationToken))
-        {
-            return;
-        }
-
         await Task.Delay(2000, cancellationToken);
-        if (Find(GetImage("chat_club_quiz"), new TemplateSearchOptions { Threshold = 0.98 }, cancellationToken).Success)
-        {
-            await Context.SendEscapeAsync(cancellationToken);
-            await Task.Delay(1500, cancellationToken);
-        }
+        ClearTaskStateRegions();
     }
 
     private async Task HandleEventsStateAsync(CancellationToken cancellationToken)
@@ -451,6 +425,227 @@ internal sealed class AutoClubQuizTask :
         }
 
         return bestRect;
+    }
+
+    private sealed class ClubQuizChatNavigator
+    {
+        private const int ChannelExpandDelayMilliseconds = 1500;
+        private const int ChannelSwitchDelayMilliseconds = 2200;
+        private const int ChannelRetryDelayMilliseconds = 600;
+        private const int QuizEntryDelayMilliseconds = 2500;
+        private const double QuizEntryThreshold = 0.98;
+
+        private readonly AutoClubQuizTask _task;
+
+        public ClubQuizChatNavigator(AutoClubQuizTask task)
+        {
+            _task = task;
+        }
+
+        public async Task<bool> TryEnterOwnClubQuizAsync(CancellationToken cancellationToken)
+        {
+            if (!await EnsureChannelGroupExpandedAsync("社团", "社团聊天", cancellationToken))
+            {
+                _task.Logger.LogDebug("未展开社团聊天频道。");
+                return false;
+            }
+
+            if (!await ClickChannelAsync("社团聊天", cancellationToken))
+            {
+                return false;
+            }
+
+            await Task.Delay(ChannelSwitchDelayMilliseconds, cancellationToken);
+            return await TryClickQuizEntryAsync(closeIfStillVisible: false, cancellationToken);
+        }
+
+        public async Task<bool> TryEnterCollegeHelpQuizAsync(CancellationToken cancellationToken)
+        {
+            if (!await EnsureChannelGroupExpandedAsync("学院", "学院互助", cancellationToken))
+            {
+                _task.Logger.LogDebug("未展开学院互助频道。");
+                return false;
+            }
+
+            if (!await ClickChannelAsync("学院互助", cancellationToken))
+            {
+                return false;
+            }
+
+            await Task.Delay(ChannelSwitchDelayMilliseconds, cancellationToken);
+            return await TryClickQuizEntryAsync(closeIfStillVisible: true, cancellationToken);
+        }
+
+        private async Task<bool> EnsureChannelGroupExpandedAsync(
+            string groupName,
+            string expandedChildName,
+            CancellationToken cancellationToken)
+        {
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                var channels = await ReadChannelTextsAsync(cancellationToken);
+                if (FindChannel(channels, expandedChildName) is not null)
+                {
+                    return true;
+                }
+
+                var group = FindChannel(channels, groupName);
+                if (group is null)
+                {
+                    _task.Logger.LogDebug("未识别到聊天频道分组：{GroupName}", groupName);
+                    await Task.Delay(ChannelRetryDelayMilliseconds, cancellationToken);
+                    continue;
+                }
+
+                await ClickChannelAsync(group, cancellationToken);
+                await Task.Delay(ChannelExpandDelayMilliseconds, cancellationToken);
+            }
+
+            return FindChannel(await ReadChannelTextsAsync(cancellationToken), expandedChildName) is not null;
+        }
+
+        private async Task<bool> ClickChannelAsync(
+            string channelName,
+            CancellationToken cancellationToken)
+        {
+            var channels = await ReadChannelTextsAsync(cancellationToken);
+            var channel = FindChannel(channels, channelName);
+            if (channel is null)
+            {
+                _task.Logger.LogDebug("未识别到聊天频道：{ChannelName}", channelName);
+                return false;
+            }
+
+            await ClickChannelAsync(channel, cancellationToken);
+            return true;
+        }
+
+        private async Task ClickChannelAsync(
+            ChatChannelTextRegion channel,
+            CancellationToken cancellationToken)
+        {
+            var centerX = channel.Bounds.X + channel.Bounds.Width / 2;
+            var centerY = channel.Bounds.Y + channel.Bounds.Height / 2;
+            _task.Logger.LogDebug("切换聊天频道：{ChannelText}", channel.Text);
+            await _task.Context.ClickCanonicalAsync(centerX, centerY, cancellationToken);
+        }
+
+        private async Task<bool> TryClickQuizEntryAsync(
+            bool closeIfStillVisible,
+            CancellationToken cancellationToken)
+        {
+            if (!await _task.TryClickNamedTemplateAsync("chat_club_quiz", QuizEntryThreshold, cancellationToken))
+            {
+                _task.Logger.LogDebug("当前聊天频道未找到社团答题入口。");
+                return false;
+            }
+
+            await Task.Delay(QuizEntryDelayMilliseconds, cancellationToken);
+            if (_task.Find(
+                    _task.GetImage("chat_club_quiz"),
+                    new TemplateSearchOptions { Threshold = QuizEntryThreshold },
+                    cancellationToken).Success)
+            {
+                if (closeIfStillVisible)
+                {
+                    await _task.Context.SendEscapeAsync(cancellationToken);
+                    await Task.Delay(ChannelSwitchDelayMilliseconds, cancellationToken);
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<IReadOnlyList<ChatChannelTextRegion>> ReadChannelTextsAsync(
+            CancellationToken cancellationToken)
+        {
+            var configuredRegion = _task.Context.TaskCoordinates.GetRequiredRegion(TaskCoordinateIds.ChatChannels);
+            var channelRegion = new Rect(
+                configuredRegion.X,
+                configuredRegion.Y,
+                configuredRegion.Width,
+                configuredRegion.Height);
+
+            using var captureMat = _task.Context.CaptureBgrMat(cancellationToken);
+            using var cropped = Crop(captureMat, channelRegion);
+            var ocrRegions = await _task._ocrService.RecognizeRegionsAsync(
+                cropped,
+                OcrEngineType.PaddleOCR,
+                cancellationToken);
+
+            var channels = ocrRegions
+                .Where(region => !string.IsNullOrWhiteSpace(region.Text))
+                .Select(region => new ChatChannelTextRegion(
+                    region.Text.Trim(),
+                    new Rect(
+                        channelRegion.X + region.Bounds.X,
+                        channelRegion.Y + region.Bounds.Y,
+                        region.Bounds.Width,
+                        region.Bounds.Height)))
+                .OrderBy(region => region.Bounds.Y)
+                .ThenBy(region => region.Bounds.X)
+                .ToArray();
+
+            ShowChannelRegions(channels);
+            return channels;
+        }
+
+        private void ShowChannelRegions(IReadOnlyList<ChatChannelTextRegion> channels)
+        {
+            if (channels.Count == 0)
+            {
+                _task.ClearTaskStateRegions();
+                return;
+            }
+
+            _task.Context.Overlay.SetTaskStateRegions(
+                channels.Select(channel => _task.Context.ToOverlayRegion(
+                    ToTemplateRegion(channel.Bounds),
+                    null,
+                    channel.Text,
+                    OverlayRegionStatusKind.Detail,
+                    OverlayRegionKind.Ocr)).ToArray());
+        }
+
+        private static ChatChannelTextRegion? FindChannel(
+            IReadOnlyList<ChatChannelTextRegion> channels,
+            string channelName)
+        {
+            var normalizedTarget = NormalizeChannelText(channelName);
+            var exactMatch = channels.FirstOrDefault(channel =>
+                NormalizeChannelText(channel.Text).Equals(normalizedTarget, StringComparison.Ordinal));
+            if (exactMatch is not null)
+            {
+                return exactMatch;
+            }
+
+            if (normalizedTarget.Length <= 2)
+            {
+                return channels.FirstOrDefault(channel =>
+                {
+                    var normalizedText = NormalizeChannelText(channel.Text);
+                    return normalizedText.StartsWith(normalizedTarget, StringComparison.Ordinal) &&
+                        normalizedText.Length <= normalizedTarget.Length + 1;
+                });
+            }
+
+            return channels.FirstOrDefault(channel =>
+                NormalizeChannelText(channel.Text).Contains(normalizedTarget, StringComparison.Ordinal));
+        }
+
+        private static string NormalizeChannelText(string text)
+        {
+            return new string((text ?? string.Empty)
+                .Where(character =>
+                    !char.IsWhiteSpace(character) &&
+                    !char.IsPunctuation(character) &&
+                    !char.IsSymbol(character))
+                .ToArray());
+        }
+
+        private sealed record ChatChannelTextRegion(string Text, Rect Bounds);
     }
 
     private sealed class ClubQuizSession

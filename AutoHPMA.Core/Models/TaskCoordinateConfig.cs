@@ -40,5 +40,6 @@ public readonly record struct TaskCoordinateRegion(int X, int Y, int Width, int 
 public static class TaskCoordinateIds
 {
     public const string ClubQuizProgress = "club-quiz.progress";
+    public const string ChatChannels = "chat.channels";
     public const string CookingNextOrder = "cooking.next-order";
 }

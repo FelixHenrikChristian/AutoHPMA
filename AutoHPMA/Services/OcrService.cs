@@ -50,6 +50,26 @@ public sealed class OcrService : IOcrService
         };
     }
 
+    public async Task<IReadOnlyList<OcrTextRegion>> RecognizeRegionsAsync(
+        Mat mat,
+        OcrEngineType engineType,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(mat);
+        if (mat.Empty())
+        {
+            return Array.Empty<OcrTextRegion>();
+        }
+
+        return engineType switch
+        {
+            OcrEngineType.WindowsOCR => await RecognizeRegionsWithWindowsOcrAsync(mat, cancellationToken),
+            OcrEngineType.PaddleOCR => await RecognizeRegionsWithMatAsync(mat, static input => PaddleOCRHelper.Instance.OcrRegions(input), cancellationToken),
+            OcrEngineType.RapidOCR or OcrEngineType.TesseractOCR => await RecognizeWholeTextRegionAsync(mat, engineType, cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(engineType), engineType, "不支持的 OCR 引擎。"),
+        };
+    }
+
     private async Task<string> RecognizeWithWindowsOcrAsync(SoftwareBitmap bitmap, CancellationToken cancellationToken)
     {
         var engine = _windowsOcrEngine.Value
@@ -89,6 +109,66 @@ public sealed class OcrService : IOcrService
         return await RecognizeWithWindowsOcrAsync(bitmap, cancellationToken);
     }
 
+    private async Task<IReadOnlyList<OcrTextRegion>> RecognizeRegionsWithWindowsOcrAsync(
+        SoftwareBitmap bitmap,
+        CancellationToken cancellationToken)
+    {
+        var engine = _windowsOcrEngine.Value
+            ?? throw new InvalidOperationException("当前系统没有可用的 Windows OCR 语言。");
+
+        if (bitmap.PixelWidth > OcrEngine.MaxImageDimension || bitmap.PixelHeight > OcrEngine.MaxImageDimension)
+        {
+            throw new InvalidOperationException($"图片尺寸超过 Windows OCR 限制：最大 {OcrEngine.MaxImageDimension}px。");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        SoftwareBitmap? converted = null;
+        var input = bitmap;
+        if (bitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
+            bitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
+        {
+            converted = SoftwareBitmap.Convert(bitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            input = converted;
+        }
+
+        try
+        {
+            var result = await engine.RecognizeAsync(input);
+            cancellationToken.ThrowIfCancellationRequested();
+            return result.Lines
+                .SelectMany(line => line.Words)
+                .Where(word => !string.IsNullOrWhiteSpace(word.Text))
+                .Select(word => new OcrTextRegion(
+                    word.Text,
+                    ToOpenCvRect(word.BoundingRect, input.PixelWidth, input.PixelHeight)))
+                .ToArray();
+        }
+        finally
+        {
+            converted?.Dispose();
+        }
+    }
+
+    private async Task<IReadOnlyList<OcrTextRegion>> RecognizeRegionsWithWindowsOcrAsync(
+        Mat mat,
+        CancellationToken cancellationToken)
+    {
+        using var bitmap = ToSoftwareBitmap(mat);
+        return await RecognizeRegionsWithWindowsOcrAsync(bitmap, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<OcrTextRegion>> RecognizeWholeTextRegionAsync(
+        Mat mat,
+        OcrEngineType engineType,
+        CancellationToken cancellationToken)
+    {
+        var text = await RecognizeAsync(mat, engineType, cancellationToken);
+        return string.IsNullOrWhiteSpace(text)
+            ? Array.Empty<OcrTextRegion>()
+            : [new OcrTextRegion(text.Trim(), new Rect(0, 0, mat.Width, mat.Height))];
+    }
+
     private static Task<string> RecognizeWithMatAsync(
         SoftwareBitmap bitmap,
         Func<Mat, string> recognizer,
@@ -112,6 +192,30 @@ public sealed class OcrService : IOcrService
             cancellationToken.ThrowIfCancellationRequested();
             return recognizer(mat);
         }, cancellationToken);
+
+    private static Task<IReadOnlyList<OcrTextRegion>> RecognizeRegionsWithMatAsync(
+        Mat source,
+        Func<Mat, IReadOnlyList<OcrTextRegion>> recognizer,
+        CancellationToken cancellationToken)
+        => Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var mat = ToBgrMat(source);
+            cancellationToken.ThrowIfCancellationRequested();
+            return recognizer(mat);
+        }, cancellationToken);
+
+    private static Rect ToOpenCvRect(
+        Windows.Foundation.Rect rect,
+        int imageWidth,
+        int imageHeight)
+    {
+        var x = Math.Clamp((int)Math.Floor(rect.X), 0, Math.Max(imageWidth - 1, 0));
+        var y = Math.Clamp((int)Math.Floor(rect.Y), 0, Math.Max(imageHeight - 1, 0));
+        var right = Math.Clamp((int)Math.Ceiling(rect.X + rect.Width), x + 1, imageWidth);
+        var bottom = Math.Clamp((int)Math.Ceiling(rect.Y + rect.Height), y + 1, imageHeight);
+        return new Rect(x, y, Math.Max(1, right - x), Math.Max(1, bottom - y));
+    }
 
     private static SoftwareBitmap ToSoftwareBitmap(Mat mat)
     {

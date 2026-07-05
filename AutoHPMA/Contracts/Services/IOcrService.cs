@@ -11,6 +11,11 @@ public enum OcrEngineType
     TesseractOCR,
 }
 
+public sealed record OcrTextRegion(
+    string Text,
+    Rect Bounds,
+    float? Score = null);
+
 public interface IOcrService
 {
     Task<string> RecognizeAsync(
@@ -19,6 +24,11 @@ public interface IOcrService
         CancellationToken cancellationToken = default);
 
     Task<string> RecognizeAsync(
+        Mat mat,
+        OcrEngineType engineType,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<OcrTextRegion>> RecognizeRegionsAsync(
         Mat mat,
         OcrEngineType engineType,
         CancellationToken cancellationToken = default);
