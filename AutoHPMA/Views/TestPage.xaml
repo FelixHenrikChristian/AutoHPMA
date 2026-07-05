@@ -46,6 +46,11 @@
                     <FontIcon Glyph="&#xE790;" />
                 </SelectorBarItem.Icon>
             </SelectorBarItem>
+            <SelectorBarItem x:Name="ItemCoordinates" Text="坐标配置">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE713;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
         </SelectorBar>
 
         <Frame x:Name="ContentFrame"

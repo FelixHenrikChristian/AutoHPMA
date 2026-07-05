@@ -101,6 +101,12 @@ public partial class App : Application
             services.AddSingleton<ITemplateMatchingService, TemplateMatchingService>();
             services.AddSingleton<IContourDetectionService, ContourDetectionService>();
             services.AddSingleton<IColorFilterService, ColorFilterService>();
+            services.AddSingleton(_ => TaskCoordinateConfigStore.Load(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Configuration",
+                    "TaskCoordinates",
+                    "1280x720.json")));
 
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();

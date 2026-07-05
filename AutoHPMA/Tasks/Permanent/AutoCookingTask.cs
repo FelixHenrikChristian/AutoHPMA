@@ -246,7 +246,6 @@ internal sealed class AutoCookingTask :
         private readonly HashSet<int> _preCookedSteps = [];
         private readonly Dictionary<string, int> _condimentCounts = [];
         private bool _initialized;
-        private Point _nextOrder = new(400, 130);
 
         public CookingSession(AutoCookingTask task, CookingDishConfig dishConfig)
         {
@@ -454,7 +453,7 @@ internal sealed class AutoCookingTask :
         private async Task ExecuteFinalStageAsync(CancellationToken cancellationToken)
         {
             _completedSteps.Clear();
-            ResetDefaultOrder();
+            ResetOrder();
 
             if (IsCookingOver(cancellationToken))
             {
@@ -556,7 +555,12 @@ internal sealed class AutoCookingTask :
                 return;
             }
 
-            await DragAsync(_kitchenwareCenters["board"], _nextOrder, cancellationToken);
+            var nextOrder = _task.Context.TaskCoordinates.GetRequiredPoint(
+                TaskCoordinateIds.CookingNextOrder);
+            await DragAsync(
+                _kitchenwareCenters["board"],
+                new Point(nextOrder.X, nextOrder.Y),
+                cancellationToken);
         }
 
         private async Task DiscardAllFoodAsync(CancellationToken cancellationToken)
@@ -582,9 +586,8 @@ internal sealed class AutoCookingTask :
             }
         }
 
-        private void ResetDefaultOrder()
+        private void ResetOrder()
         {
-            _nextOrder = new Point(400, 130);
             _condimentCounts.Clear();
             foreach (var condiment in _dishConfig.RequiredCondiments)
             {

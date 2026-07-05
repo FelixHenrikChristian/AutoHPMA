@@ -1,0 +1,27 @@
+{
+  "canonicalWidth": 1280,
+  "canonicalHeight": 720,
+  "points": [
+    {
+      "id": "cooking.next-order",
+      "x": 400,
+      "y": 130
+    }
+  ],
+  "regions": [
+    {
+      "id": "club-quiz.progress",
+      "x": 600,
+      "y": 112,
+      "width": 80,
+      "height": 40
+    },
+    {
+      "id": "chat.channels",
+      "x": 111,
+      "y": 62,
+      "width": 347,
+      "height": 658
+    }
+  ]
+}

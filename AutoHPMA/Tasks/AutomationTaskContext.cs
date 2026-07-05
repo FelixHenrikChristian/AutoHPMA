@@ -5,6 +5,7 @@ using AutoHPMA.Capture.Native;
 using AutoHPMA.Contracts.Services;
 using AutoHPMA.Core.Contracts.Services;
 using AutoHPMA.Core.Models;
+using AutoHPMA.Core.Services;
 using AutoHPMA.Models;
 using OpenCvSharp;
 
@@ -12,13 +13,12 @@ namespace AutoHPMA.Tasks;
 
 public sealed class AutomationTaskContext
 {
-    private const double BaseGameWidth = 1280d;
-
     public AutomationTaskContext(
         IAutomationRuntimeService runtime,
         IOverlayWindowService overlay,
         IWindowInteractionService windowInteraction,
         ITemplateMatchingService templateMatching,
+        TaskCoordinateConfigStore taskCoordinates,
         GameWindowTarget target,
         AutomationRuntimeOptions? runtimeOptions)
     {
@@ -26,6 +26,7 @@ public sealed class AutomationTaskContext
         Overlay = overlay;
         WindowInteraction = windowInteraction;
         TemplateMatching = templateMatching;
+        TaskCoordinates = taskCoordinates;
         Target = target;
         RuntimeOptions = runtimeOptions;
 
@@ -39,6 +40,8 @@ public sealed class AutomationTaskContext
     public IWindowInteractionService WindowInteraction { get; }
 
     public ITemplateMatchingService TemplateMatching { get; }
+
+    public TaskCoordinateConfigStore TaskCoordinates { get; }
 
     public GameWindowTarget Target { get; }
 
@@ -68,7 +71,9 @@ public sealed class AutomationTaskContext
 
         OffsetX = gameRect.Left - displayRect.Left;
         OffsetY = gameRect.Top - displayRect.Top;
-        CoordinateScale = Math.Max(gameRect.Width / BaseGameWidth, 0.001d);
+        CoordinateScale = Math.Max(
+            gameRect.Width / (double)TaskCoordinates.CanonicalWidth,
+            0.001d);
     }
 
     public Mat CaptureBgrMat(CancellationToken cancellationToken = default)

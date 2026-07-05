@@ -40,6 +40,7 @@ public sealed partial class TestPage : Page
             3 => typeof(TemplateMatchingPage),
             4 => typeof(ContourDetectionPage),
             5 => typeof(ColorFilterPage),
+            6 => typeof(TaskCoordinateEditorPage),
             _ => typeof(ScreenshotTestPage),
         };
 

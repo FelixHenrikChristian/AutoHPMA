@@ -2,6 +2,7 @@ using AutoHPMA.Contracts.Services;
 using AutoHPMA.Contracts.Tasks;
 using AutoHPMA.Core.Contracts.Services;
 using AutoHPMA.Core.Models;
+using AutoHPMA.Core.Services;
 using AutoHPMA.Models;
 using AutoHPMA.Tasks;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
     private readonly IOverlayWindowService _overlay;
     private readonly IWindowInteractionService _windowInteraction;
     private readonly ITemplateMatchingService _templateMatching;
+    private readonly TaskCoordinateConfigStore _taskCoordinates;
     private readonly IReadOnlyDictionary<AutomationTaskType, IAutomationTaskFactory> _factories;
     private readonly ILogger<AutomationTaskRunner> _logger;
     private readonly object _gate = new();
@@ -26,6 +28,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
         IOverlayWindowService overlay,
         IWindowInteractionService windowInteraction,
         ITemplateMatchingService templateMatching,
+        TaskCoordinateConfigStore taskCoordinates,
         IEnumerable<IAutomationTaskFactory> factories,
         ILogger<AutomationTaskRunner> logger)
     {
@@ -33,6 +36,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
         _overlay = overlay;
         _windowInteraction = windowInteraction;
         _templateMatching = templateMatching;
+        _taskCoordinates = taskCoordinates;
         _factories = factories.ToDictionary(factory => factory.TaskType);
         _logger = logger;
 
@@ -86,6 +90,7 @@ public sealed class AutomationTaskRunner : IAutomationTaskRunner, IDisposable
                 _overlay,
                 _windowInteraction,
                 _templateMatching,
+                _taskCoordinates,
                 _runtime.CurrentTarget,
                 _runtime.CurrentOptions);
             var activeTask = new ActiveTask(task, linkedCts);

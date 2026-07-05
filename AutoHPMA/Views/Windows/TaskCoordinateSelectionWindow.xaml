@@ -1,0 +1,204 @@
+<winex:WindowEx
+    x:Class="AutoHPMA.Views.Windows.TaskCoordinateSelectionWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:winex="using:WinUIEx"
+    mc:Ignorable="d">
+
+    <Grid
+        x:Name="RootHost"
+        Padding="16"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        Loaded="RootHost_Loaded"
+        RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon
+                            FontSize="16"
+                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                            Glyph="&#xE722;" />
+                        <TextBlock
+                            x:Name="SelectionTitleText"
+                            Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="SourceText"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Border
+                        Padding="10,5"
+                        Background="{ThemeResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <TextBlock
+                            x:Name="FrameSizeText"
+                            Style="{StaticResource CaptionTextBlockStyle}" />
+                    </Border>
+
+                    <Border
+                        Padding="4"
+                        Background="{ThemeResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button
+                                x:Name="ZoomOutButton"
+                                Width="32"
+                                Height="30"
+                                MinWidth="0"
+                                Padding="0"
+                                Click="ZoomOutButton_Click"
+                                ToolTipService.ToolTip="缩小">
+                                <FontIcon FontSize="14" Glyph="&#xE71F;" />
+                            </Button>
+                            <Button
+                                Height="30"
+                                MinWidth="58"
+                                Padding="8,0"
+                                Click="ResetZoomButton_Click"
+                                ToolTipService.ToolTip="恢复 100%">
+                                <TextBlock
+                                    x:Name="ZoomPercentText"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="100%" />
+                            </Button>
+                            <Button
+                                x:Name="ZoomInButton"
+                                Width="32"
+                                Height="30"
+                                MinWidth="0"
+                                Padding="0"
+                                Click="ZoomInButton_Click"
+                                ToolTipService.ToolTip="放大">
+                                <FontIcon FontSize="14" Glyph="&#xE8A3;" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border
+            Grid.Row="1"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <ScrollViewer
+                x:Name="ImageScrollViewer"
+                HorizontalContentAlignment="Center"
+                HorizontalScrollBarVisibility="Auto"
+                HorizontalScrollMode="Auto"
+                MaxZoomFactor="4"
+                MinZoomFactor="0.25"
+                SizeChanged="ImageScrollViewer_SizeChanged"
+                VerticalContentAlignment="Center"
+                VerticalScrollBarVisibility="Auto"
+                VerticalScrollMode="Auto"
+                ViewChanged="ImageScrollViewer_ViewChanged"
+                ZoomMode="Enabled">
+                <Grid
+                    x:Name="ImageHost"
+                    Background="Black"
+                    PointerCanceled="ImageHost_PointerCanceled"
+                    PointerMoved="ImageHost_PointerMoved"
+                    PointerPressed="ImageHost_PointerPressed"
+                    PointerReleased="ImageHost_PointerReleased"
+                    SizeChanged="ImageHost_SizeChanged">
+                    <Image
+                        x:Name="PreviewImage"
+                        Stretch="Uniform" />
+                    <Canvas
+                        x:Name="OverlayCanvas"
+                        IsHitTestVisible="False">
+                        <Rectangle
+                            x:Name="SelectionRectangle"
+                            Fill="#332FD7FF"
+                            Stroke="#FF2FD7FF"
+                            StrokeThickness="2"
+                            Visibility="Collapsed" />
+                        <Ellipse
+                            x:Name="PointMarker"
+                            Width="12"
+                            Height="12"
+                            Fill="#662FD7FF"
+                            Stroke="#FF2FD7FF"
+                            StrokeThickness="2"
+                            Visibility="Collapsed" />
+                    </Canvas>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    x:Name="StatusText"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    TextWrapping="Wrap" />
+
+                <Button
+                    Grid.Column="1"
+                    Click="ResetButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontSize="14" Glyph="&#xE72C;" />
+                        <TextBlock Text="重选" />
+                    </StackPanel>
+                </Button>
+
+                <Button
+                    Grid.Column="2"
+                    Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontSize="14" Glyph="&#xE711;" />
+                        <TextBlock Text="取消" />
+                    </StackPanel>
+                </Button>
+
+                <Button
+                    x:Name="ConfirmButton"
+                    Grid.Column="3"
+                    Click="ConfirmButton_Click"
+                    IsEnabled="False"
+                    Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontSize="14" Glyph="&#xE73E;" />
+                        <TextBlock Text="确认" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</winex:WindowEx>

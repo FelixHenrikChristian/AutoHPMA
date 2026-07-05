@@ -455,11 +455,10 @@ internal sealed class AutoClubQuizTask :
 
     private sealed class ClubQuizSession
     {
-        private static readonly Rect ProgressRegion = new(600, 112, 80, 40);
-
         private readonly AutoClubQuizTask _task;
         private readonly Dictionary<char, Rect> _optionRegions = [];
 
+        private Rect _progressRegion;
         private Rect _questionRegion;
         private bool _hasAnsweredSinceJoining;
         private bool _optionsLocated;
@@ -472,6 +471,13 @@ internal sealed class AutoClubQuizTask :
 
         public void Reset()
         {
+            var progressRegion = _task.Context.TaskCoordinates.GetRequiredRegion(
+                TaskCoordinateIds.ClubQuizProgress);
+            _progressRegion = new Rect(
+                progressRegion.X,
+                progressRegion.Y,
+                progressRegion.Width,
+                progressRegion.Height);
             _optionRegions.Clear();
             _questionRegion = default;
             _hasAnsweredSinceJoining = false;
@@ -484,7 +490,7 @@ internal sealed class AutoClubQuizTask :
         {
             if (!_optionsLocated && !TryLocateOptions(cancellationToken))
             {
-                _task.Logger.LogWarning("未定位到社团问答选项区域，将重试。");
+                _task.Logger.LogDebug("未定位到社团问答选项区域，将重试。");
                 await Task.Delay(1000, cancellationToken);
                 return;
             }
@@ -640,7 +646,7 @@ internal sealed class AutoClubQuizTask :
             using var optionB = Crop(captureMat, _optionRegions['B']);
             using var optionC = Crop(captureMat, _optionRegions['C']);
             using var optionD = Crop(captureMat, _optionRegions['D']);
-            using var progress = Crop(captureMat, ProgressRegion);
+            using var progress = Crop(captureMat, _progressRegion);
 
             return new ClubQuizRecognizedText(
                 await _task.RecognizeAsync(question, engineType, cancellationToken),
@@ -704,7 +710,7 @@ internal sealed class AutoClubQuizTask :
                 });
             }
 
-            AddOcrRegion(regions, ProgressRegion, text.Progress);
+            AddOcrRegion(regions, _progressRegion, text.Progress);
             _task.Context.Overlay.SetTaskStateRegions(regions);
         }
 
