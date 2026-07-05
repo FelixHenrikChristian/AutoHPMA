@@ -148,6 +148,11 @@ internal sealed class AutoClubQuizTask :
         {
             _victoryHandled = false;
         }
+
+        if (previousState == ClubQuizState.ChatFrame && currentState != ClubQuizState.ChatFrame)
+        {
+            ClearTaskStateRegions();
+        }
     }
 
     private async Task HandleUnknownStateAsync(CancellationToken cancellationToken)
@@ -180,7 +185,22 @@ internal sealed class AutoClubQuizTask :
             return;
         }
 
-        await TryClickNamedTemplateAsync("ui_badge", cancellationToken: cancellationToken);
+        var badgeResult = FindImage(
+            "ui_badge",
+            new TemplateSearchOptions
+            {
+                Threshold = 0.84,
+                MatchMode = TemplateMatchModes.CCoeffNormed,
+                UseAlphaMask = true,
+                ScaleFactors = StateScaleFactors,
+            },
+            cancellationToken);
+        if (badgeResult.FirstRegion is { } badgeRegion)
+        {
+            ShowMatchRegions(badgeResult);
+            await Context.ClickMatchCenterAsync(badgeRegion, cancellationToken);
+        }
+
         _gatherRefreshMode = GatherRefreshMode.ChatBox;
         await Task.Delay(3000, cancellationToken);
     }
@@ -202,9 +222,9 @@ internal sealed class AutoClubQuizTask :
             Logger.LogDebug("未在社团聊天找到答题入口，且未开启加入其他社团答题。");
         }
 
+        ClearTaskStateRegions();
         await Context.SendEscapeAsync(cancellationToken);
         await Task.Delay(2000, cancellationToken);
-        ClearTaskStateRegions();
     }
 
     private async Task HandleEventsStateAsync(CancellationToken cancellationToken)
